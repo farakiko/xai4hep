@@ -64,7 +64,7 @@ class LRP():
 
         # run a forward pass
         self.model.eval()
-        preds = self.model(input).detach()
+        preds = self.model(input.to(self.device)).detach()
 
         # get the activations
         self.activations = activations
