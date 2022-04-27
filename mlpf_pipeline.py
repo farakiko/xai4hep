@@ -174,7 +174,7 @@ class LRP_MLPF():
 
         # initialize the Rscores tensor using the output predictions
         Rscores = preds[:, neuron_to_explain].reshape(-1, 1).detach()
-        print('Rscores', Rscores.device)
+
         # build an Rtensor
         R_tensor = torch.zeros([Rscores.shape[0], Rscores.shape[0], Rscores.shape[1]]).to(self.device)
         for node in range(R_tensor.shape[0]):
@@ -296,6 +296,11 @@ class LRP_MLPF():
         if msg_passing_layer:  # message_passing hack
             Rscores_old = torch.transpose(Rscores_old, 0, 1)
         Rscores_new = torch.bmm(Z, Rscores_old.unsqueeze(-1)).squeeze()  # we have to use bmm -> batch matrix multiplication
+        print('W', W.device)
+        print('x', x.device)
+        print('Z', Z.device)
+        print('R_new', Rscores_new.device)
+        print('R_old', Rscores_old.device)
 
         if layer in self.skip_connections:
             print('SKIP CONNECTION')
@@ -428,6 +433,7 @@ print(tf - t0)
 #     return msg_passing_layers
 
 
+# CPU
 # 1000 ~ 44.917036056518555
 # 900 ~ 37.25138521194458
 # 800 ~ 29.98154926300049
@@ -439,3 +445,7 @@ print(tf - t0)
 # 200 ~ 2.417971134185791
 # 100 ~ 0.7758309841156006
 # 50 ~ 0.28067684173583984
+
+
+# gpu
+# 1000 ~ 27.340571880340576
