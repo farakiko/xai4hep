@@ -67,7 +67,7 @@ class LRP():
         preds = self.model(input.to(self.device)).detach()
 
         # get the activations
-        self.activations = activations
+        self.activations = activations.to(device).detach()
         self.num_layers = len(activations.keys())
         self.in_features_dim = self.name2layer(list(activations.keys())[0]).in_features
 
@@ -147,7 +147,7 @@ class LRP():
 
         torch.cuda.empty_cache()
 
-        W = layer.weight.detach().to(self.device)   # get weight matrix
+        W = layer.weight.detach()   # get weight matrix
         W = torch.transpose(W, 0, 1)
 
         # for the output layer, pick the part of the weight matrix connecting only to the neuron you're attempting to explain
@@ -155,13 +155,13 @@ class LRP():
             W = W[:, neuron_to_explain].reshape(-1, 1)
 
         # (1) multiply elementwise each column in the matrix W by the vector x to get the Z matrix
-        Z = x.unsqueeze(-1).to(self.device) * W     # unsqueeze will add a necessary new dimension to x and then we use broadcasting
+        Z = x.unsqueeze(-1) * W     # unsqueeze will add a necessary new dimension to x and then we use broadcasting
 
         # (2) divide each column in Z by the sum of the its elements
         Z = Z / (Z.sum(axis=1, keepdim=True) + self.epsilon)    # epsilon is introduced for stability (lrp-epsilon rule)
 
         # (3) matrix multiply Z and Rscores_old to obtain Rscores_new
-        Rscores_new = torch.bmm(Z, Rscores_old.to(self.device).unsqueeze(-1)).squeeze().to(self.device)  # we have to use bmm -> batch matrix multiplication
+        Rscores_new = torch.bmm(Z, Rscores_old.unsqueeze(-1)).squeeze()  # we have to use bmm -> batch matrix multiplication
 
         print('- Finished computing Rscores')
 

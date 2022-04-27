@@ -56,11 +56,12 @@ def build_toy_dataset():
     return dataset
 
 
-def quick_train(model, epochs, dataset, batch_size):
+def quick_train(device, model, epochs, dataset, batch_size):
     print('Training a model')
-    train_loader = DataLoader(dataset, batch_size=4, shuffle=True)
 
+    train_loader = DataLoader(dataset, batch_size=4, shuffle=True)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    model.to(device)
 
     for epoch in range(epochs):
         print(f'Epoch {epoch}')
@@ -71,7 +72,7 @@ def quick_train(model, epochs, dataset, batch_size):
             Y = batch[:, -1]
 
             # Forwardprop
-            preds = model(X.float())
+            preds = model(X.float().to(device))
 
             loss = torch.nn.functional.cross_entropy(preds.float(), Y.long())
 
@@ -99,9 +100,8 @@ if __name__ == "__main__":
 
     # train sample model
     model = FFN()
-    model.to(device)
     model.train()
-    quick_train(model, epochs=1, dataset=dataset, batch_size=4)
+    quick_train(device, model, epochs=1, dataset=dataset, batch_size=4)
 
     # run lrp on sample model
     model.eval()
