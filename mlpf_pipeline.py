@@ -180,8 +180,6 @@ class LRP_MLPF():
         for node in range(R_tensor.shape[0]):
             R_tensor[node][node] = Rscores[node].clone()
 
-        print('R_tensor', R_tensor.device)
-
         # loop over layers in the model to propagate Rscores backward
         for layer_index in range(self.num_layers, 0, -1):
             R_tensor = self.explain_single_layer(R_tensor, layer_index, neuron_to_explain)
@@ -227,7 +225,8 @@ class LRP_MLPF():
                 R_tensor_new = torch.zeros([R_tensor_old.shape[0], R_tensor_old.shape[0], R_tensor_old.shape[-1]])
             else:
                 R_tensor_new = torch.zeros([R_tensor_old.shape[0], R_tensor_old.shape[0], layer.in_features])
-
+            print('here old', R_tensor_old.device)
+            print('here new', R_tensor_new.device)
             for node in range(R_tensor_old.shape[0]):
                 R_tensor_new[node] = self.eps_rule(self, layer, layer_name, input, R_tensor_old[node], neuron_to_explain, msg_passing_layer)
 
