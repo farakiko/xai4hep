@@ -109,7 +109,7 @@ class LRP():
         layer = self.name2layer(layer_name)
 
         # get layer activations
-        input = self.activations[layer_name].to(device).detach()
+        input = self.activations[layer_name].to(self.device).detach()
 
         print(f"Explaining layer {self.num_layers+1-layer_index}/{self.num_layers}: {layer}")
 
