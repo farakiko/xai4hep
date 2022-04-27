@@ -176,10 +176,10 @@ class LRP_MLPF():
         Rscores = preds[:, neuron_to_explain].reshape(-1, 1).detach()
         print('Rscores', Rscores.device)
         # build an Rtensor
-        R_tensor = torch.zeros([Rscores.shape[0], Rscores.shape[0], Rscores.shape[1]])
+        R_tensor = torch.zeros([Rscores.shape[0], Rscores.shape[0], Rscores.shape[1]]).to(self.device)
         for node in range(R_tensor.shape[0]):
             R_tensor[node][node] = Rscores[node].clone()
-        R_tensor.to(self.device)
+
         print('R_tensor', R_tensor.device)
 
         # loop over layers in the model to propagate Rscores backward
