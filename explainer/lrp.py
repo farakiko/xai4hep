@@ -161,7 +161,7 @@ class LRP():
         Z = Z / (Z.sum(axis=1, keepdim=True) + self.epsilon)    # epsilon is introduced for stability (lrp-epsilon rule)
 
         # (3) matrix multiply Z and Rscores_old to obtain Rscores_new
-        Rscores_new = torch.bmm(Z, Rscores_old.unsqueeze(-1)).squeeze()  # we have to use bmm -> batch matrix multiplication
+        Rscores_new = torch.matmul(Z, Rscores_old.unsqueeze(-1)).squeeze()
 
         print('- Finished computing Rscores')
 
