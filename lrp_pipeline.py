@@ -84,11 +84,8 @@ def quick_train(model, epochs, dataset, batch_size):
 
 
 if __name__ == "__main__":
-    # Check if the GPU configuration has been provided
-    use_gpu = torch.cuda.device_count() > 0
-
-    # define the global base device
-    if use_gpu:
+    # Check if the GPU configuration and define the global base device
+    if torch.cuda.device_count() > 0:
         print(f'Will use {torch.cuda.device_count()} gpu(s)')
         print("GPU model:", torch.cuda.get_device_name(0))
         device = torch.device('cuda:0')
@@ -102,10 +99,12 @@ if __name__ == "__main__":
 
     # train sample model
     model = FFN()
+    model.to(device)
     model.train()
     quick_train(model, epochs=1, dataset=dataset, batch_size=4)
 
     # run lrp on sample model
+    model.eval()
     lrp_instance = LRP(device, model, epsilon=1e-9)
     Rscores0 = lrp_instance.explain(samples, neuron_to_explain=0)
     # Rscores1 = lrp_instance.explain(samples, neuron_to_explain=1)

@@ -155,20 +155,26 @@ class LRP():
             W = W[:, neuron_to_explain].reshape(-1, 1)
 
         # (1) multiply elementwise each column in the matrix W by the vector x to get the Z matrix
-        Z = x.unsqueeze(-1) * W     # unsqueeze will add a necessary new dimension to x and then we use broadcasting
+        Z = x.unsqueeze(-1).to(self.device) * W     # unsqueeze will add a necessary new dimension to x and then we use broadcasting
 
         # (2) divide each column in Z by the sum of the its elements
         Z = Z / (Z.sum(axis=1, keepdim=True) + self.epsilon)    # epsilon is introduced for stability (lrp-epsilon rule)
 
         # (3) matrix multiply Z and Rscores_old to obtain Rscores_new
-        Rscores_new = torch.bmm(Z, Rscores_old.unsqueeze(-1)).squeeze()  # we have to use bmm -> batch matrix multiplication
+        Rscores_new = torch.bmm(Z, Rscores_old.to(self.device).unsqueeze(-1)).squeeze().to(self.device)  # we have to use bmm -> batch matrix multiplication
 
         print('- Finished computing Rscores')
+
+        print('W.device', W.device)
+        print('x.device', x.device)
+        print('Z.device', Z.device)
+        print('R_new.device', Rscores_new.device)
+        print('R_old.device', Rscores_old.device)
 
         # checking conservation of Rscores
         rtol = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
         for tol in rtol:
-            if (torch.allclose(Rscores_old.sum(axis=1), Rscores_new.to('cpu').sum(axis=1), rtol=tol)):
+            if (torch.allclose(Rscores_old.sum(axis=1), Rscores_new.sum(axis=1), rtol=tol)):
                 print(f'- Rscores are conserved up to relative tolerance {str(tol)}')
                 break
 
