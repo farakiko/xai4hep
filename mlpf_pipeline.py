@@ -296,11 +296,6 @@ class LRP_MLPF():
         if msg_passing_layer:  # message_passing hack
             Rscores_old = torch.transpose(Rscores_old, 0, 1)
         Rscores_new = torch.bmm(Z, Rscores_old.unsqueeze(-1)).squeeze()  # we have to use bmm -> batch matrix multiplication
-        print('W', W.device)
-        print('x', x.device)
-        print('Z', Z.device)
-        print('R_new', Rscores_new.device)
-        print('R_old', Rscores_old.device)
 
         if layer in self.skip_connections:
             print('SKIP CONNECTION')
@@ -364,7 +359,7 @@ lrp_instance = LRP_MLPF(device, model, epsilon=1e-9)
 t0 = time.time()
 Rscores0 = lrp_instance.explain(small_batch, neuron_to_explain=0)
 tf = time.time()
-print(tf - t0)
+print('time taken to perform lrp: ', tf - t0)
 
 # # ## taking a few samples, we notice that farouk's lrp preserves R-scores more strictly
 # # e.g. sample number 7 here
