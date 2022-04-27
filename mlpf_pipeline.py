@@ -295,7 +295,7 @@ class LRP_MLPF():
         # (3) matrix multiply Z and Rscores_old to obtain Rscores_new
         if msg_passing_layer:  # message_passing hack
             Rscores_old = torch.transpose(Rscores_old, 0, 1)
-        Rscores_new = torch.bmm(Z, Rscores_old.unsqueeze(-1)).squeeze()  # we have to use bmm -> batch matrix multiplication
+        Rscores_new = torch.matmul(Z, Rscores_old.unsqueeze(-1)).squeeze()
 
         if layer in self.skip_connections:
             print('SKIP CONNECTION')
