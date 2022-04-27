@@ -119,7 +119,7 @@ class LRP_MLPF():
     def __init__(self, device, model, epsilon):
 
         self.device = device
-        self.model = model
+        self.model = model.to(device)
         self.epsilon = epsilon  # for stability reasons in the lrp-epsilon rule (by default: a very small number)
 
         # check if the model has any skip connections to accomodate them
@@ -160,8 +160,7 @@ class LRP_MLPF():
 
         # run a forward pass
         model.eval()
-        preds, self.A, self.msg_activations = model(input)
-        preds = preds.detach()
+        preds, self.A, self.msg_activations = model(input.to(self.device))
 
         # get the activations
         self.activations = activations
@@ -175,7 +174,7 @@ class LRP_MLPF():
             self.skip_connections_relevance = 0
 
         # initialize the Rscores tensor using the output predictions
-        Rscores = preds[:, neuron_to_explain].reshape(-1, 1)
+        Rscores = preds[:, neuron_to_explain].reshape(-1, 1).detach()
 
         # build an Rtensor
         R_tensor = torch.zeros([Rscores.shape[0], Rscores.shape[0], Rscores.shape[1]])
@@ -213,11 +212,11 @@ class LRP_MLPF():
         # get layer activations
         if layer_name in self.msg_passing_layers.keys():
             print(f"Explaining layer {self.num_layers+1-layer_index}/{self.num_layers}: MessagePassing layer, {layer}")
-            input = self.msg_activations[layer_name[:-6]]
+            input = self.msg_activations[layer_name[:-6]].to(self.device).detach()
             msg_passing_layer = True
         else:
             print(f"Explaining layer {self.num_layers+1-layer_index}/{self.num_layers}: {layer}")
-            input = self.activations[layer_name].detach()
+            input = self.activations[layer_name].to(self.device).detach()
             msg_passing_layer = False
 
         if 'Linear' in str(layer):
@@ -277,10 +276,10 @@ class LRP_MLPF():
         torch.cuda.empty_cache()
 
         if msg_passing_layer:   # message_passing hack
-            x = torch.transpose(x, 0, 1)       # transpose the activations to distribute the Rscores over the other dimension (over nodes instead of features)
-            W = self.A[layer_name[:-6]]        # use the adjacency matrix as the weight matrix
+            x = torch.transpose(x, 0, 1)               # transpose the activations to distribute the Rscores over the other dimension (over nodes instead of features)
+            W = self.A[layer_name[:-6]].detach()       # use the adjacency matrix as the weight matrix
         else:
-            W = layer.weight.detach().to(self.device)   # get weight matrix
+            W = layer.weight.detach()  # get weight matrix
 
         W = torch.transpose(W, 0, 1)    # sanity check of forward pass: (torch.matmul(x, W) + layer.bias) == layer(x)
 

@@ -74,7 +74,7 @@ def quick_train(device, model, epochs, dataset, batch_size):
             # Forwardprop
             preds = model(X.float().to(device))
 
-            loss = torch.nn.functional.cross_entropy(preds.float(), Y.long())
+            loss = torch.nn.functional.cross_entropy(preds.float(), Y.long().to(device))
 
             optimizer.zero_grad()
             loss.backward()
@@ -119,6 +119,6 @@ if __name__ == "__main__":
     #
     # print('As expected, feature2 is the most relevant :)')
 
-sample = 25
-print(Rscores0[sample].sum().item())
-print(model(samples)[sample][0].item())
+    sample = 25
+    print(Rscores0[sample].sum().item())
+    print(model(samples.to(device))[sample][0].item())

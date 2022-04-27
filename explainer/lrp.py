@@ -64,7 +64,7 @@ class LRP():
 
         # run a forward pass
         self.model.eval()
-        preds = self.model(input.to(self.device)).detach()
+        preds = self.model(input.to(self.device))
 
         # get the activations
         self.activations = activations
@@ -78,7 +78,7 @@ class LRP():
             self.skip_connections_relevance = 0
 
         # initialize the Rscores vector using the output predictions
-        Rscores = preds[:, neuron_to_explain].reshape(-1, 1)
+        Rscores = preds[:, neuron_to_explain].reshape(-1, 1).detach()
 
         # loop over layers in the model to propagate Rscores backward
         for layer_index in range(self.num_layers, 0, -1):
