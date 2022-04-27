@@ -101,24 +101,26 @@ if __name__ == "__main__":
     # train sample model
     model = FFN()
     model.train()
-    quick_train(device, model, epochs=1, dataset=dataset, batch_size=4)
+    quick_train(device, model, epochs=3, dataset=dataset, batch_size=4)
 
     # run lrp on sample model
     model.eval()
     lrp_instance = LRP(device, model, epsilon=1e-9)
     Rscores0 = lrp_instance.explain(samples, neuron_to_explain=0)
     # Rscores1 = lrp_instance.explain(samples, neuron_to_explain=1)
-    #
-    # print('------------------------------------------')
-    # print(f'Rscores of the samples for output neuron 0: \n {Rscores0}')
-    # print('------------------------------------------')
-    # normalized_Rscores = (Rscores0.absolute() / Rscores0.absolute().sum(axis=1, keepdim=True))
-    # avg_normalized_Rscores = normalized_Rscores.sum(axis=0, keepdim=True) / normalized_Rscores.shape[0]
-    #
-    # print(f'Average normalized Rscores per feature: \n {avg_normalized_Rscores}')
-    #
-    # print('As expected, feature2 is the most relevant :)')
+
+    print('------------------------------------------')
+    print(f'Rscores of the samples for output neuron 0: \n {Rscores0}')
+    print('------------------------------------------')
+
+    normalized_Rscores = (Rscores0.absolute() / Rscores0.absolute().sum(axis=1, keepdim=True))
+    avg_normalized_Rscores = normalized_Rscores.sum(axis=0, keepdim=True) / normalized_Rscores.shape[0]
+    print(f'Average normalized Rscores per feature: \n {avg_normalized_Rscores}')
+    print('As expected, feature2 is the most relevant :)')
+
+    print('------------------------------------------')
 
     sample = 25
+    print('Checking conservation of Rscores for a random sample')
     print(Rscores0[sample].sum().item())
     print(model(samples.to(device))[sample][0].item())

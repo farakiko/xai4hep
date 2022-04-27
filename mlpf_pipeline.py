@@ -21,7 +21,6 @@ from torch.nn import Sequential as Seq, Linear as Lin, ReLU
 from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 from torch_geometric.data import Data, DataLoader, DataListLoader, Batch
-%matplotlib inline
 
 # Check if the GPU configuration has been provided
 use_gpu = torch.cuda.device_count() > 0
@@ -57,7 +56,7 @@ def get_small_batch(batch, size):
 
 
 small_batch = get_small_batch(batch, size=1000)
-small_batch
+print(small_batch)
 
 
 def train(model, epochs):
@@ -175,11 +174,12 @@ class LRP_MLPF():
 
         # initialize the Rscores tensor using the output predictions
         Rscores = preds[:, neuron_to_explain].reshape(-1, 1).detach()
-
+        print('Rscores', Rscores.device)
         # build an Rtensor
         R_tensor = torch.zeros([Rscores.shape[0], Rscores.shape[0], Rscores.shape[1]])
         for node in range(R_tensor.shape[0]):
             R_tensor[node][node] = Rscores[node].clone()
+        print('R_tensor', R_tensor.device)
 
         # loop over layers in the model to propagate Rscores backward
         for layer_index in range(self.num_layers, 0, -1):

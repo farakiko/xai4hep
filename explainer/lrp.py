@@ -79,6 +79,7 @@ class LRP():
 
         # initialize the Rscores vector using the output predictions
         Rscores = preds[:, neuron_to_explain].reshape(-1, 1).detach()
+        print('Rscores.device', Rscores.device)
 
         # loop over layers in the model to propagate Rscores backward
         for layer_index in range(self.num_layers, 0, -1):
@@ -164,12 +165,6 @@ class LRP():
         Rscores_new = torch.bmm(Z, Rscores_old.unsqueeze(-1)).squeeze()  # we have to use bmm -> batch matrix multiplication
 
         print('- Finished computing Rscores')
-
-        print('W.device', W.device)
-        print('x.device', x.device)
-        print('Z.device', Z.device)
-        print('R_new.device', Rscores_new.device)
-        print('R_old.device', Rscores_old.device)
 
         # checking conservation of Rscores
         rtol = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
