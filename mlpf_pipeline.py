@@ -220,13 +220,12 @@ class LRP_MLPF():
 
         if 'Linear' in str(layer):
             if layer in self.skip_connections:
-                R_tensor_new = torch.zeros([R_tensor_old.shape[0], R_tensor_old.shape[0], layer.in_features - self.in_features_dim])
+                R_tensor_new = torch.zeros([R_tensor_old.shape[0], R_tensor_old.shape[0], layer.in_features - self.in_features_dim]).to(self.device)
             elif msg_passing_layer:
-                R_tensor_new = torch.zeros([R_tensor_old.shape[0], R_tensor_old.shape[0], R_tensor_old.shape[-1]])
+                R_tensor_new = torch.zeros([R_tensor_old.shape[0], R_tensor_old.shape[0], R_tensor_old.shape[-1]]).to(self.device)
             else:
-                R_tensor_new = torch.zeros([R_tensor_old.shape[0], R_tensor_old.shape[0], layer.in_features])
-            print('here old', R_tensor_old.device)
-            print('here new', R_tensor_new.device)
+                R_tensor_new = torch.zeros([R_tensor_old.shape[0], R_tensor_old.shape[0], layer.in_features]).to(self.device)
+
             for node in range(R_tensor_old.shape[0]):
                 R_tensor_new[node] = self.eps_rule(self, layer, layer_name, input, R_tensor_old[node], neuron_to_explain, msg_passing_layer)
 
