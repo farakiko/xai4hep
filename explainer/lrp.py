@@ -24,7 +24,7 @@ class LRP():
     def __init__(self, device, model, epsilon):
 
         self.device = device
-        self.model = model
+        self.model = model.to(device)
         self.epsilon = epsilon  # for stability reasons in the lrp-epsilon rule (by default: a very small number)
 
         # check if the model has any skip connections to accomodate them
