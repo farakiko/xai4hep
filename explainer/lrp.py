@@ -67,7 +67,7 @@ class LRP():
         preds = self.model(input.to(self.device)).detach()
 
         # get the activations
-        self.activations = activations.to(device).detach()
+        self.activations = activations
         self.num_layers = len(activations.keys())
         self.in_features_dim = self.name2layer(list(activations.keys())[0]).in_features
 
@@ -109,7 +109,7 @@ class LRP():
         layer = self.name2layer(layer_name)
 
         # get layer activations
-        input = self.activations[layer_name].detach()
+        input = self.activations[layer_name].to(device).detach()
 
         print(f"Explaining layer {self.num_layers+1-layer_index}/{self.num_layers}: {layer}")
 
