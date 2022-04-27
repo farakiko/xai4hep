@@ -11,41 +11,13 @@ import torch.nn.functional as F
 from torch.nn import Sequential as Seq, Linear as Lin, ReLU
 
 
-class FFN(nn.Module):
-    """
-    showcase an example of an FFN model, with a skip connection, that can be explained by LRP
-    """
-
-    def __init__(self, input_dim=3, hidden_dim=256, embedding_dim=40, output_dim=2):
-        super(FFN, self).__init__()
-
-        self.act = nn.ReLU
-
-        self.nn1 = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            self.act(),
-            nn.Linear(hidden_dim, hidden_dim),
-            self.act(),
-            nn.Linear(hidden_dim, embedding_dim),
-        )
-        self.nn2 = nn.Sequential(
-            nn.Linear(input_dim + embedding_dim, hidden_dim),
-            self.act(),
-            nn.Linear(hidden_dim, output_dim),
-        )
-
-    def forward(self, X):
-        embedding = self.nn1(X)
-        return self.nn2(torch.cat([X, embedding], axis=1))
-
-
 class LRP():
 
     """
-    LRP class that introduces useful helper functions defined on a PyTorch model, and an explain method that runs layerwise-relevance propagation
-    on a PyTorch model of the form FFN()... currently supports:
-            - Linear and activation layers in the model
-            - skip connections provided that they are only input_features skip connections and that they are defined in the following order torch.cat[(input_features, ...)]
+    LRP class that introduces useful helper functions defined on a PyTorch model, and an explain method that runs layerwise-relevance propagation the model.
+    Currently supports:
+        - Linear and activation layers in the model
+        - skip connections provided that they are only input_features skip connections and that they are defined in the following order torch.cat[(input_features, ...)]
 
     """
 

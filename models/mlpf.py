@@ -48,6 +48,8 @@ class MLPF(nn.Module):
             self.elu(),
             nn.Linear(hidden_dim_nn1, hidden_dim_nn1),
             self.elu(),
+            nn.Linear(hidden_dim_nn1, hidden_dim_nn1),
+            self.elu(),
             nn.Linear(hidden_dim_nn1, embedding_dim),
         )
 
@@ -61,12 +63,16 @@ class MLPF(nn.Module):
             self.elu(),
             nn.Linear(hidden_dim, hidden_dim),
             self.elu(),
+            nn.Linear(hidden_dim, hidden_dim),
+            self.elu(),
             nn.Linear(hidden_dim, output_dim_id),
         )
 
         # (4) DNN layer: regressing p4
         self.nn3 = nn.Sequential(
             nn.Linear(output_dim_id, hidden_dim),
+            self.elu(),
+            nn.Linear(hidden_dim, hidden_dim),
             self.elu(),
             nn.Linear(hidden_dim, hidden_dim),
             self.elu(),
@@ -91,6 +97,7 @@ class MLPF(nn.Module):
         preds_id = self.nn2(embedding)
         preds_p4 = self.nn3(preds_id)
 
+        # return embedding, A, msg_activations
         return torch.cat([preds_id, preds_p4], axis=-1), A, msg_activations
 
 
