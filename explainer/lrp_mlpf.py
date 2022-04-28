@@ -138,7 +138,7 @@ class LRP_MLPF():
             elif 'BatchNorm1d' in str(layer):
                 print(f"- skipping layer because it's a BatchNorm layer")
             print(f"- Rscores do not need to be computed")
-            return Rscores_old
+            return R_tensor_old
 
     """
     lrp-epsilon rule
