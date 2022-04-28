@@ -28,10 +28,13 @@ class FFN(nn.Module):
 
         self.nn1 = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
             self.act(),
             nn.Linear(hidden_dim, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
             self.act(),
             nn.Linear(hidden_dim, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
             self.act(),
             nn.Linear(hidden_dim, embedding_dim),
         )
