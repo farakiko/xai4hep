@@ -172,7 +172,7 @@ class LRP_MLPF():
 
         if msg_passing_layer:   # message_passing hack
             x = torch.transpose(x, 0, 1)               # transpose the activations to distribute the Rscores over the other dimension (over nodes instead of features)
-            W = self.A[layer_name[:-6]].detach()       # use the adjacency matrix as the weight matrix
+            W = self.A[layer_name[:-6]].detach().to(self.device)       # use the adjacency matrix as the weight matrix
         else:
             W = layer.weight.detach()  # get weight matrix
 
