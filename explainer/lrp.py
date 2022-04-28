@@ -16,8 +16,8 @@ class LRP():
     """
     LRP class that introduces useful helper functions defined on a PyTorch model, and an explain method that runs layerwise-relevance propagation the model.
     Currently supports:
-        - Linear and activation layers in the model
-        - skip connections provided that they are only input_features skip connections and that they are defined in the following order torch.cat[(input_features, ...)]
+        - Linear, activation, and BatchNorm1d layers in the model
+        - skip connections provided that they are input_features skip connections and that they are defined in the following order torch.cat[(input_features, ...)]
 
     """
 
@@ -59,7 +59,7 @@ class LRP():
 
         for name, module in self.model.named_modules():
             # unfold any containers so as to register hooks only for their child modules
-            if ('Linear' in str(type(module))) or ('activation' in str(type(module))):
+            if ('Linear' in str(type(module))) or ('activation' in str(type(module))) or ('BatchNorm1d' in str(type(module))):
                 module.register_forward_hook(get_activation(name))
 
         # run a forward pass
@@ -71,7 +71,7 @@ class LRP():
         self.num_layers = len(activations.keys())
         self.in_features_dim = self.name2layer(list(activations.keys())[0]).in_features
 
-        print(f'Total number of layers (including activation layers): {self.num_layers}')
+        print(f'Total number of layers: {self.num_layers}')
 
         # initialize Rscores for skip connections (in case there are any)
         if len(self.skip_connections) != 0:
@@ -117,7 +117,10 @@ class LRP():
             Rscores_new = self.eps_rule(self, layer, input, Rscores_old, neuron_to_explain)
             return Rscores_new
         else:
-            print(f"- skipping layer because it's an activation layer")
+            if 'activation' in str(layer):
+                print(f"- skipping layer because it's an activation layer")
+            elif 'BatchNorm1d' in str(layer):
+                print(f"- skipping layer because it's a BatchNorm layer")
             print(f"- Rscores do not need to be computed")
             return Rscores_old
 
@@ -173,11 +176,11 @@ class LRP():
                 break
 
         if layer in self.skip_connections:
-            print('SKIP CONNECTION LAYER')
             # set aside the relevance of the input_features in the skip connection
             # recall: it is assumed that the skip connections are defined in the following order torch.cat[(input_features, ...)] )
             self.skip_connections_relevance = self.skip_connections_relevance + Rscores_new[:, :self.in_features_dim]
             return Rscores_new[:, self.in_features_dim:]
+
         return Rscores_new
 
     """

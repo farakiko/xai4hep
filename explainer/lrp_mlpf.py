@@ -63,7 +63,7 @@ class LRP_MLPF():
 
         for name, module in self.model.named_modules():
             # unfold any containers so as to register hooks only for their child modules (equivalently we are demanding type(module) != nn.Sequential))
-            if ('Linear' in str(type(module))) or ('activation' in str(type(module))):
+            if ('Linear' in str(type(module))) or ('activation' in str(type(module))) or ('BatchNorm1d' in str(type(module))):
                 module.register_forward_hook(get_activation(name))
 
         # run a forward pass
@@ -75,7 +75,7 @@ class LRP_MLPF():
         self.num_layers = len(activations.keys())
         self.in_features_dim = self.name2layer(list(activations.keys())[0]).in_features
 
-        print(f'Total number of layers (including activation layers): {self.num_layers}')
+        print(f'Total number of layers: {self.num_layers}')
 
         # initialize Rscores for skip connections (in case there are any)
         if len(self.skip_connections) != 0:
@@ -132,9 +132,11 @@ class LRP_MLPF():
             R_tensor_new = self.eps_rule(self, layer, layer_name, input, R_tensor_old, neuron_to_explain, msg_passing_layer)
             print('- Finished computing Rscores')
             return R_tensor_new
-
         else:
-            print(f"- skipping layer because it's an activation layer")
+            if 'activation' in str(layer):
+                print(f"- skipping layer because it's an activation layer")
+            elif 'BatchNorm1d' in str(layer):
+                print(f"- skipping layer because it's a BatchNorm layer")
             print(f"- Rscores do not need to be computed")
             return R_tensor_old
 
@@ -170,7 +172,7 @@ class LRP_MLPF():
 
         if msg_passing_layer:   # message_passing hack
             x = torch.transpose(x, 0, 1)               # transpose the activations to distribute the Rscores over the other dimension (over nodes instead of features)
-            W = self.A[layer_name[:-6]].detach()       # use the adjacency matrix as the weight matrix
+            W = self.A[layer_name[:-6]].detach().to(self.device)       # use the adjacency matrix as the weight matrix
         else:
             W = layer.weight.detach()  # get weight matrix
 
@@ -201,12 +203,12 @@ class LRP_MLPF():
         if layer in self.skip_connections:
             # set aside the relevance of the input_features in the skip connection
             # recall: it is assumed that the skip connections are defined in the following order torch.cat[(input_features, ...)] )
-            print('SKIP CONNECTION')
             self.skip_connections_relevance = self.skip_connections_relevance + R_tensor_new[:, :, :self.in_features_dim]
             return R_tensor_new[:, :, self.in_features_dim:]
 
         if msg_passing_layer:  # message_passing hack
             return torch.transpose(R_tensor_new, 1, 2)
+
         return R_tensor_new
 
     """
