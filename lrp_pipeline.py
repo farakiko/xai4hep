@@ -3,22 +3,11 @@ import os.path as osp
 import os
 import sys
 from glob import glob
-
 import numpy as np
-import mplhep as hep
-import pandas as pd
-
 import torch
-import torch_geometric
-from torch_geometric.nn import GravNetConv
 
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.nn import Sequential as Seq, Linear as Lin, ReLU
 from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
-from torch_geometric.data import Data, DataListLoader, Batch
-from torch_geometric.loader import DataLoader
 
 from explainer import LRP
 from models import FFN

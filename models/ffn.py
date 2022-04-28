@@ -5,13 +5,7 @@ import sys
 from glob import glob
 
 import torch
-from torch import Tensor
 import torch.nn as nn
-from torch.nn import Linear
-from torch_scatter import scatter
-from torch_geometric.nn.conv import MessagePassing
-from torch_geometric.utils import to_dense_adj
-import torch.nn.functional as F
 
 from typing import Optional, Union
 
