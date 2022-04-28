@@ -181,6 +181,7 @@ class LRP():
             # recall: it is assumed that the skip connections are defined in the following order torch.cat[(input_features, ...)] )
             self.skip_connections_relevance = self.skip_connections_relevance + Rscores_new[:, :self.in_features_dim]
             return Rscores_new[:, self.in_features_dim:]
+
         return Rscores_new
 
     """
