@@ -17,7 +17,8 @@ import torch.nn.functional as F
 from torch.nn import Sequential as Seq, Linear as Lin, ReLU
 from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
-from torch_geometric.data import Data, DataLoader, DataListLoader, Batch
+from torch_geometric.data import Data, DataListLoader, Batch
+from torch_geometric.loader import DataLoader
 
 from explainer import LRP
 from models import FFN
@@ -109,8 +110,6 @@ if __name__ == "__main__":
     Rscores0 = lrp_instance.explain(samples, neuron_to_explain=0)
     # Rscores1 = lrp_instance.explain(samples, neuron_to_explain=1)
 
-    print('------------------------------------------')
-    print(f'Rscores of the samples for output neuron 0: \n {Rscores0}')
     print('------------------------------------------')
 
     normalized_Rscores = (Rscores0.absolute() / Rscores0.absolute().sum(axis=1, keepdim=True))
