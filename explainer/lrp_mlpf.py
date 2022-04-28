@@ -63,7 +63,7 @@ class LRP_MLPF():
 
         for name, module in self.model.named_modules():
             # unfold any containers so as to register hooks only for their child modules (equivalently we are demanding type(module) != nn.Sequential))
-            if ('Linear' in str(type(module))) or ('activation' in str(type(module))):
+            if ('Linear' in str(type(module))) or ('activation' in str(type(module))) or ('BatchNorm1d' in str(type(module))):
                 module.register_forward_hook(get_activation(name))
 
         # run a forward pass
@@ -132,11 +132,13 @@ class LRP_MLPF():
             R_tensor_new = self.eps_rule(self, layer, layer_name, input, R_tensor_old, neuron_to_explain, msg_passing_layer)
             print('- Finished computing Rscores')
             return R_tensor_new
-
         else:
-            print(f"- skipping layer because it's an activation layer")
+            if 'activation' in str(layer):
+                print(f"- skipping layer because it's an activation layer")
+            elif 'BatchNorm1d' in str(layer):
+                print(f"- skipping layer because it's a BatchNorm layer")
             print(f"- Rscores do not need to be computed")
-            return R_tensor_old
+            return Rscores_old
 
     """
     lrp-epsilon rule
@@ -207,6 +209,7 @@ class LRP_MLPF():
 
         if msg_passing_layer:  # message_passing hack
             return torch.transpose(R_tensor_new, 1, 2)
+
         return R_tensor_new
 
     """
