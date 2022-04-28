@@ -122,5 +122,5 @@ if __name__ == "__main__":
 
     sample = 25
     print('Checking conservation of Rscores for a random sample')
-    print(Rscores0[sample].sum().item())
-    print(model(samples.to(device))[sample][0].item())
+    print('R_input ', Rscores0[sample].sum().item())
+    print('R_output', model(samples.to(device))[sample][0].item())
