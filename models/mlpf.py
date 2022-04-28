@@ -33,71 +33,71 @@ class MLPF(nn.Module):
     """
 
     def __init__(self,
-                 input_dim=12, hidden_dim=40, hidden_dim_nn1=64, input_encoding=12, embedding_dim=64,
-                 output_dim_id=6, output_dim_p4=6,
-                 target="gen", nn1=True, nn3=True,
-                 num_convs=2):
+                 input_dim=12, output_dim_id=6, output_dim_p4=6,
+                 embedding_dim=64, hidden_dim1=64, hidden_dim2=256,
+                 num_convs=2, space_dim=4, propagate_dim=30, k=16):
 
         super(MLPF, self).__init__()
 
-        self.elu = nn.ReLU
+        # self.act = nn.ReLU
+        self.act = nn.ELU
 
         # (1) embedding
         self.nn1 = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim_nn1),
-            self.elu(),
-            nn.Linear(hidden_dim_nn1, hidden_dim_nn1),
-            self.elu(),
-            nn.Linear(hidden_dim_nn1, hidden_dim_nn1),
-            self.elu(),
-            nn.Linear(hidden_dim_nn1, embedding_dim),
+            nn.Linear(input_dim, hidden_dim1),
+            self.act(),
+            nn.Linear(hidden_dim1, hidden_dim1),
+            self.act(),
+            nn.Linear(hidden_dim1, hidden_dim1),
+            self.act(),
+            nn.Linear(hidden_dim1, embedding_dim),
         )
 
         self.conv = nn.ModuleList()
         for i in range(num_convs):
-            self.conv.append(GravNetConv_LRP(embedding_dim, embedding_dim, 2, 4, k=4))
+            self.conv.append(GravNetConv_LRP(embedding_dim, embedding_dim, space_dim, propagate_dim, k))
 
         # (3) DNN layer: classifiying pid
         self.nn2 = nn.Sequential(
-            nn.Linear(embedding_dim, hidden_dim),
-            self.elu(),
-            nn.Linear(hidden_dim, hidden_dim),
-            self.elu(),
-            nn.Linear(hidden_dim, hidden_dim),
-            self.elu(),
-            nn.Linear(hidden_dim, output_dim_id),
+            nn.Linear(input_dim + embedding_dim, hidden_dim2),
+            self.act(),
+            nn.Linear(hidden_dim2, hidden_dim2),
+            self.act(),
+            nn.Linear(hidden_dim2, hidden_dim2),
+            self.act(),
+            nn.Linear(hidden_dim2, output_dim_id),
         )
 
         # (4) DNN layer: regressing p4
         self.nn3 = nn.Sequential(
-            nn.Linear(output_dim_id, hidden_dim),
-            self.elu(),
-            nn.Linear(hidden_dim, hidden_dim),
-            self.elu(),
-            nn.Linear(hidden_dim, hidden_dim),
-            self.elu(),
-            nn.Linear(hidden_dim, output_dim_p4),
+            nn.Linear(input_dim + output_dim_id, hidden_dim2),
+            self.act(),
+            nn.Linear(hidden_dim2, hidden_dim2),
+            self.act(),
+            nn.Linear(hidden_dim2, hidden_dim2),
+            self.act(),
+            nn.Linear(hidden_dim2, output_dim_p4),
         )
 
     def forward(self, batch):
 
         x0 = batch.x
 
-        # DNN to predict PID
+        # embed the inputs
         embedding = self.nn1(x0)
 
-        # DNN to predict p4
+        # preform a series of graph convolutions
         A = {}
         msg_activations = {}
         for num, conv in enumerate(self.conv):
             embedding, A[f'conv.{num}'], msg_activations[f'conv.{num}'] = conv(embedding)
 
-        # preds_id = self.nn2(torch.cat([x0, embedding], axis=-1))
-        # preds_p4 = self.nn3(torch.cat([x0, preds_id], axis=-1))
-        preds_id = self.nn2(embedding)
-        preds_p4 = self.nn3(preds_id)
+        # predict the pid's
+        preds_id = self.nn2(torch.cat([x0, embedding], axis=-1))
 
-        # return embedding, A, msg_activations
+        # predict the p4's
+        preds_p4 = self.nn3(torch.cat([x0, preds_id], axis=-1))
+
         return torch.cat([preds_id, preds_p4], axis=-1), A, msg_activations
 
 
@@ -106,7 +106,7 @@ class GravNetConv_LRP(MessagePassing):
     Copied from pytorch_geometric source code
     Edits:
       - retrieve adjacency matrix (we call A), and the activations before the message passing step (we call msg_activations)
-      - switched the execution of self.lin_s & self.lin_p so that message passing step can substitute out of the box self.lin_s for lrp purposes
+      - switched the execution of self.lin_s & self.lin_p so that the message passing step can substitute out of the box self.lin_s for lrp purposes
       - used reduce='sum' instead of reduce='mean' in the message passing
       - removed skip connection
 
