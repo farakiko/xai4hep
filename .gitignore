@@ -5,6 +5,7 @@
 *.pdf
 data/*
 *.pth
+*.pkl
 test/__pycache__/
 
 

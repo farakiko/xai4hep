@@ -23,8 +23,8 @@ from explainer import LRP_MLPF
 from models import MLPF
 
 
-size = 600
-
+size = 100
+out_neuron = 0
 
 if __name__ == "__main__":
     # Check if the GPU configuration and define the global base device
@@ -44,10 +44,11 @@ if __name__ == "__main__":
     model.train()
     # quick_train(device, model, loader, epochs=4)
 
-    R = []
+    Rtensors_list, preds_list, inputs_list = [], [], []
+
     # get a sample event for lrp testing
     for i, event in enumerate(loader):
-        print(f'Event # {i}')
+        print(f'Explaining event # {i}')
         # break it down to a smaller part for lrp (to avoid memory issues)
 
         def get_small_batch(event, size):
@@ -60,20 +61,26 @@ if __name__ == "__main__":
             small_batch.batch = event.batch[:size]
             return small_batch
 
-        small_batch = get_small_batch(event, size=size)
-        print(f'Testing lrp on: \n {small_batch}')
+        event = get_small_batch(event, size=size)
 
         # run lrp on sample model
         model.eval()
         lrp_instance = LRP_MLPF(device, model, epsilon=1e-9)
-        Rscores0 = lrp_instance.explain(small_batch, neuron_to_explain=0)
+        Rtensor, pred, input = lrp_instance.explain(event, neuron_to_explain=out_neuron)
 
-        R.append(Rscores0.detach().to('cpu'))
+        Rtensors_list.append(Rtensor.detach().to('cpu'))
+        preds_list.append(pred.detach().to('cpu'))
+        inputs_list.append(input.detach().to('cpu').to_dict())
+
         # print('Checking conservation of Rscores for a random sample')
         # sample = 26
-        # print('R_input ', Rscores0[sample].sum().item())
+        # print('R_input ', Rtensor[sample].sum().item())
         # print('R_output', model(small_batch)[0][sample][0].item())
-        # if i == 2:
-        #     break
-    with open('Rscores.pkl', 'wb') as f:
-        pkl.dump(R, f)
+        if i == 2:
+            break
+    with open('Rtensors_list.pkl', 'wb') as f:
+        pkl.dump(Rtensors_list, f)
+    with open('preds_list.pkl', 'wb') as f:
+        pkl.dump(preds_list, f)
+    with open('inputs_list.pkl', 'wb') as f:
+        pkl.dump(inputs_list, f)

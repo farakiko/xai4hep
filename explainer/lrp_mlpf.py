@@ -50,6 +50,8 @@ class LRP_MLPF():
 
         Returns:
             R_tensor: a tensor/graph containing the relevance scores of the input graph for a particular output neuron
+            preds: the model predictions of the input (for further plotting/processing purposes only)
+            input: the input that was explained (for further plotting/processing purposes only)
         """
 
         # register forward hooks to retrieve intermediate activations
@@ -96,9 +98,9 @@ class LRP_MLPF():
         print("Finished explaining all layers.")
 
         if len(self.skip_connections) != 0:
-            return R_tensor + self.skip_connections_relevance
+            return R_tensor + self.skip_connections_relevance, preds, input
 
-        return R_tensor
+        return R_tensor, preds, input
 
     def explain_single_layer(self, R_tensor_old, layer_index, neuron_to_explain):
         """
