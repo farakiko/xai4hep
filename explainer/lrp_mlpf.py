@@ -175,8 +175,7 @@ class LRP_MLPF():
             W = self.A[layer_name[:-6]].detach().to(self.device)       # use the adjacency matrix as the weight matrix
         else:
             W = layer.weight.detach()  # get weight matrix
-
-        W = torch.transpose(W, 0, 1)    # sanity check of forward pass: (torch.matmul(x, W) + layer.bias) == layer(x)
+            W = torch.transpose(W, 0, 1)    # sanity check of forward pass: (torch.matmul(x, W) + layer.bias) == layer(x)
 
         # for the output layer, pick the part of the weight matrix connecting only to the neuron you're attempting to explain
         if layer == list(self.model.modules())[-1]:
@@ -196,7 +195,7 @@ class LRP_MLPF():
         # checking conservation of Rscores for a given random node (# 17)
         rtol = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
         for tol in rtol:
-            if (torch.allclose(R_tensor_old[17].sum(), R_tensor_old[17].to('cpu').sum(), rtol=tol)):
+            if (torch.allclose(R_tensor_new[17].sum(), R_tensor_old[17].sum(), rtol=tol)):
                 print(f'- Rscores are conserved up to relative tolerance {str(tol)}')
                 break
 
