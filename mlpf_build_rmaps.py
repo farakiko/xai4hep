@@ -87,12 +87,19 @@ def process_Rtensor(node, Rtensor):
     return Rtensor
 
 
-def make_Rmap(Rtensors, pid='chhadron'):
-    Rtensor_correct = torch.zeros(size, in_features)
-    Rtensor_incorrect = torch.zeros(size, in_features)
+def make_Rmap(Rtensors, pid='chhadron', neighbors=2):
+    """
+    Recall each event has a corresponding Rmap per node in the event.
+    This function process the Rmaps for a given pid.
 
-    num_Rtensors_correct = 0
-    num_Rtensors_incorrect = 0
+    Args
+        Rtensors: a list of len()=events processed. Each element is an Rtensor ~ (nodes, nodes, in_features)
+        pid: class label to process (choices are ['null', 'chhadron', 'nhadron', photon', electron', muon'])
+        neighbors: how many neighbors to show in the Rmap
+    """
+
+    Rtensor_correct, Rtensor_incorrect = torch.zeros(size, in_features), torch.zeros(size, in_features)
+    num_Rtensors_correct, num_Rtensors_incorrect = 0, 0
 
     for event, event_Rscores in enumerate(Rtensors):
         for node, node_Rtensor in enumerate(event_Rscores):
@@ -112,8 +119,11 @@ def make_Rmap(Rtensors, pid='chhadron'):
     Rtensor_correct = Rtensor_correct / num_Rtensors_correct
     Rtensor_incorrect = Rtensor_incorrect / num_Rtensors_incorrect
 
-    features = ["Track|cluster", "$p_{T}|E_{T}$", r"$\eta$", r'$\phi$', "P|E", r"$\eta_\mathrm{out}|E_{em}$", r"$\phi_\mathrm{out}|E_{had}$", "charge", "is_gen_mu", "is_gen_el"]
-    node_types = indexing_by_relevance(6, pid)    # only plot 6 rows/neighbors in Rmap
+    features = ["Track|cluster", "$p_{T}|E_{T}$", r"$\eta$", r'$\phi$',
+                "P|E", r"$\eta_\mathrm{out}|E_{em}$", r"$\phi_\mathrm{out}|E_{had}$",
+                "charge", "is_gen_mu", "is_gen_el"]
+
+    node_types = indexing_by_relevance(neighbors + 1, pid)    # only plot 6 rows/neighbors in Rmap
 
     # plot correct first first
     fig, ax = plt.subplots(figsize=(20, 10))
@@ -131,7 +141,7 @@ def make_Rmap(Rtensors, pid='chhadron'):
             text = ax.text(col, row, round(Rtensor_correct[row, col].item(), 5),
                            ha="center", va="center", color="w", fontsize=14)
 
-    plt.imshow((Rtensor_correct[:6] + 1e-12).numpy(), interpolation="nearest", cmap='copper', aspect='auto', norm=matplotlib.colors.LogNorm(vmin=1e-3))
+    plt.imshow((Rtensor_correct[:neighbors + 1] + 1e-12).numpy(), interpolation="nearest", cmap='copper', aspect='auto', norm=matplotlib.colors.LogNorm(vmin=1e-3))
 
     plt.colorbar(label='R-score', orientation="vertical")
     plt.savefig('Rmap_correct.pdf')
