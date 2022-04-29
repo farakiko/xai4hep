@@ -1,3 +1,5 @@
+from torch_geometric.data import Data, DataLoader, DataListLoader, Batch
+import jetnet
 import pickle as pkl
 import os.path as osp
 import os
@@ -124,6 +126,18 @@ class _ParticleNet(nn.Module):
     #     return ""
 
 
-model = _ParticleNet(num_hits=2, node_feat_size=12)
+dataset = jetnet.datasets.JetNet(jet_type='g')
+loader = DataLoader(dataset, batch_size=20, shuffle=True)
 
-model
+for batch in loader:
+    X = batch[0]
+    Y = batch[1]
+    break
+
+X.shape
+
+model = _ParticleNet(num_hits=X.shape[1], node_feat_size=X.shape[2])
+
+preds = model(X)
+
+preds.shape
