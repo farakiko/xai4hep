@@ -14,6 +14,5 @@ prp
 
 *.ipynb_checkpoints
 
-delphes/*.sif
 
 train_loader_mlpf.pth

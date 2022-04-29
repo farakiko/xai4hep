@@ -35,7 +35,7 @@ class MLPF(nn.Module):
     def __init__(self,
                  input_dim=12, output_dim_id=6, output_dim_p4=6,
                  embedding_dim=64, hidden_dim1=64, hidden_dim2=60,
-                 num_convs=2, space_dim=4, propagate_dim=30, k=16):
+                 num_convs=2, space_dim=4, propagate_dim=30, k=8):
         super(MLPF, self).__init__()
 
         # self.act = nn.ReLU
