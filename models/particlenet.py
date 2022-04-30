@@ -1,4 +1,6 @@
-from torch_geometric.data import Data, DataLoader, DataListLoader, Batch
+from torch_geometric.data import Data, DataListLoader, Batch
+from torch_geometric.loader import DataLoader
+
 import jetnet
 import pickle as pkl
 import os.path as osp
@@ -33,9 +35,9 @@ import numpy as np
 import torch.nn.functional as F
 
 
-class _ParticleNetEdgeNet(nn.Module):
+class ParticleNetEdgeNet(nn.Module):
     def __init__(self, in_size, layer_size):
-        super(_ParticleNetEdgeNet, self).__init__()
+        super(ParticleNetEdgeNet, self).__init__()
 
         layers = []
 
@@ -57,10 +59,9 @@ class _ParticleNetEdgeNet(nn.Module):
         return "{}(nn={})".format(self.__class__.__name__, self.model)
 
 
-class _ParticleNet(nn.Module):
-    def __init__(self, num_hits, node_feat_size, num_classes=5):
-        super(_ParticleNet, self).__init__()
-        self.num_hits = num_hits
+class ParticleNet(nn.Module):
+    def __init__(self, node_feat_size, num_classes=5):
+        super(ParticleNet, self).__init__()
         self.node_feat_size = node_feat_size
         self.num_classes = num_classes
 
@@ -76,13 +77,13 @@ class _ParticleNet(nn.Module):
         self.kernel_sizes.insert(0, self.node_feat_size)
         self.output_sizes = np.cumsum(self.kernel_sizes)
 
-        self.edge_nets.append(_ParticleNetEdgeNet(self.node_feat_size, self.kernel_sizes[1]))
+        self.edge_nets.append(ParticleNetEdgeNet(self.node_feat_size, self.kernel_sizes[1]))
         self.edge_convs.append(EdgeConv(self.edge_nets[-1], aggr="mean"))
 
         for i in range(1, self.num_edge_convs):
             # adding kernel sizes because of skip connections
             self.edge_nets.append(
-                _ParticleNetEdgeNet(self.output_sizes[i], self.kernel_sizes[i + 1])
+                ParticleNetEdgeNet(self.output_sizes[i], self.kernel_sizes[i + 1])
             )
             self.edge_convs.append(EdgeConv(self.edge_nets[-1], aggr="mean"))
 
@@ -92,12 +93,9 @@ class _ParticleNet(nn.Module):
 
         self.fc2 = nn.Linear(self.fc_size, self.num_classes)
 
-    def forward(self, x, ret_activations=False, relu_activations=False):
-        batch_size = x.size(0)
-        x = x.reshape(batch_size * self.num_hits, self.node_feat_size)
-        zeros = torch.zeros(batch_size * self.num_hits, dtype=int).to(x.device)
-        zeros[torch.arange(batch_size) * self.num_hits] = 1
-        batch = torch.cumsum(zeros, 0) - 1
+    def forward(self, batch, ret_activations=False, relu_activations=False):
+        x = batch.x
+        batch = batch.batch
 
         for i in range(self.num_edge_convs):
             # using only angular coords for knn in first edgeconv block
@@ -126,18 +124,21 @@ class _ParticleNet(nn.Module):
     #     return ""
 
 
+in_features = 4
 dataset = jetnet.datasets.JetNet(jet_type='g')
-loader = DataLoader(dataset, batch_size=20, shuffle=True)
+
+# load the dataset in a convenient pyg format
+dataset_pyg = []
+for data in dataset:
+    d = Data(x=data[0], y=data[1])
+    dataset_pyg.append(d)
+
+loader = DataLoader(dataset_pyg, batch_size=3, shuffle=False)
 
 for batch in loader:
-    X = batch[0]
-    Y = batch[1]
     break
 
-X.shape
+model = ParticleNet(node_feat_size=in_features)
 
-model = _ParticleNet(num_hits=X.shape[1], node_feat_size=X.shape[2])
-
-preds = model(X)
-
-preds.shape
+preds = model(batch)
+preds

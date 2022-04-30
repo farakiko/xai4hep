@@ -24,6 +24,9 @@ from models import MLPF
 
 # this script builds a toy dataset, trains a simple FFN model on the dataset, and tests LRP
 
+size = 100
+out_neuron = 0
+
 
 def quick_train(device, model, loader, epochs):
     print('Training a model')
@@ -84,32 +87,46 @@ if __name__ == "__main__":
     # train sample model
     model = MLPF(num_convs=2)
     model.train()
-    quick_train(device, model, loader, epochs=4)
+    # quick_train(device, model, loader, epochs=4)
+
+    Rtensors_list, preds_list, inputs_list = [], [], []
 
     # get a sample event for lrp testing
-    for event in loader:
-        break
+    for i, event in enumerate(loader):
+        print(f'Explaining event # {i}')
 
-    # break it down to a smaller part for lrp (to avoid memory issues)
-    def get_small_batch(event, size):
-        small_batch = Batch()
-        small_batch.x = event.x[:size]
-        small_batch.ygen = event.ygen[:size]
-        small_batch.ygen_id = event.ygen_id[:size]
-        small_batch.ycand = event.ycand[:size]
-        small_batch.ycand_id = event.ycand_id[:size]
-        small_batch.batch = event.batch[:size]
-        return small_batch
+        # break it down to a smaller part for lrp (to avoid memory issues)
+        def get_small_batch(event, size):
+            small_batch = Batch()
+            small_batch.x = event.x[:size]
+            small_batch.ygen = event.ygen[:size]
+            small_batch.ygen_id = event.ygen_id[:size]
+            small_batch.ycand = event.ycand[:size]
+            small_batch.ycand_id = event.ycand_id[:size]
+            small_batch.batch = event.batch[:size]
+            return small_batch
 
-    small_batch = get_small_batch(event, size=300)
-    print(f'Testing lrp on: \n {small_batch}')
+        event = get_small_batch(event, size=size)
+        print(f'Testing lrp on: \n {event}')
 
-    # run lrp on sample model
-    model.eval()
-    lrp_instance = LRP_MLPF(device, model, epsilon=1e-9)
-    Rscores0 = lrp_instance.explain(small_batch, neuron_to_explain=0)
+        # run lrp on sample model
+        model.eval()
+        lrp_instance = LRP_MLPF(device, model, epsilon=1e-9)
+        Rtensor, pred, input = lrp_instance.explain(event, neuron_to_explain=out_neuron)
 
-    print('Checking conservation of Rscores for a random sample')
-    sample = 26
-    print('R_input ', Rscores0[sample].sum().item())
-    print('R_output', model(small_batch)[0][sample][0].item())
+        Rtensors_list.append(Rtensor.detach().to('cpu'))
+        preds_list.append(pred.detach().to('cpu'))
+        inputs_list.append(input.detach().to('cpu').to_dict())
+
+        # print('Checking conservation of Rscores for a random sample')
+        # sample = 26
+        # print('R_input ', Rtensor[sample].sum().item())
+        # print('R_output', model(small_batch)[0][sample][0].item())
+        if i == 2:
+            break
+        with open('Rtensors_list.pkl', 'wb') as f:
+            pkl.dump(Rtensors_list, f)
+        with open('preds_list.pkl', 'wb') as f:
+            pkl.dump(preds_list, f)
+        with open('inputs_list.pkl', 'wb') as f:
+            pkl.dump(inputs_list, f)

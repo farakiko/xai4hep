@@ -238,10 +238,10 @@ class GravNetConv_LRP(MessagePassing):
 # loader = torch.load('../train_loader_mlpf.pth')
 #
 # for batch in loader:
-#     print(batch)
 #     break
 #
 # preds, A, msg_activations = model(batch)
 #
-# A.keys()
-# msg_activations.keys()
+#
+# batch
+# batch.batch

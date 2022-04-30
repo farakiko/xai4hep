@@ -138,13 +138,14 @@ def make_Rmap(Rtensors, pid='chhadron', neighbors=2):
     ax.set_yticklabels(node_types, fontsize=20)
     for col in range(len(features)):
         for row in range(len(node_types)):
-            text = ax.text(col, row, round(Rtensor_correct[row, col].item(), 5),
+            text = ax.text(col, row, round(Rtensor_incorrect[row, col].item(), 5),
                            ha="center", va="center", color="w", fontsize=14)
 
-    plt.imshow((Rtensor_correct[:neighbors + 1] + 1e-12).numpy(), interpolation="nearest", cmap='copper', aspect='auto', norm=matplotlib.colors.LogNorm(vmin=1e-3))
+    plt.imshow((Rtensor_incorrect[:neighbors + 1] + 1e-12).numpy(),
+               cmap='copper', aspect='auto', norm=matplotlib.colors.LogNorm(vmin=1e-3))
 
     plt.colorbar(label='R-score', orientation="vertical")
-    plt.savefig('Rmap_correct.pdf')
+    plt.savefig('Rtensor_incorrect.pdf')
 
 
 if __name__ == "__main__":
