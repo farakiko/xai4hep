@@ -20,6 +20,7 @@ try:
     from torch_cluster import knn
 except ImportError:
     knn = None
+from torch_cluster import knn_graph
 
 
 class MLPF(nn.Module):
@@ -199,8 +200,9 @@ class GravNetConv_LRP(MessagePassing):
         # transform to the space dimension to build the graph
         s_l: Tensor = self.lin_s(x[0])
         s_r: Tensor = self.lin_s(x[1]) if is_bipartite else s_l
-
-        edge_index = knn(s_l, s_r, self.k, b[0], b[1]).flip([0])
+        print('x[0]', is_bipartite)
+        # edge_index = knn(s_l, s_r, self.k, b[0], b[1]).flip([0])
+        edge_index = knn_gsraph(s_l, self.k, b[0], b[1]).flip([0])
 
         edge_weight = (s_l[edge_index[0]] - s_r[edge_index[1]]).pow(2).sum(-1)
         edge_weight = torch.exp(-10. * edge_weight)  # 10 gives a better spread
@@ -229,19 +231,29 @@ class GravNetConv_LRP(MessagePassing):
                 f'{self.out_channels}, k={self.k})')
 
 
-# model = MLPF()
-# model.train()
-#
-# model = MLPF()
-#
+model = MLPF()
+model.train()
+
+model = MLPF()
+
 # # load the dataset
 # loader = torch.load('../train_loader_mlpf.pth')
 #
-# for batch in loader:
-#     break
 #
-# preds, A, msg_activations = model(batch)
+# print('Loading the data..')
+# full_dataset_qcd = PFGraphDataset('../data/test_tmp_delphes/data/pythia8_qcd')
 #
+# # construct Dataloaders to facilitate looping over batches
+# print('Building dataloaders..')
+# test_loader = dataloader_qcd(full_dataset_qcd, False, 1, batch_size=2)
 #
-# batch
-# batch.batch
+
+for batch in test_loader:
+    break
+
+
+preds, A, msg_activations = model(batch)
+
+
+batch
+batch.batch
