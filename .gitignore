@@ -5,6 +5,7 @@
 *.pdf
 data/*
 *.pth
+*.pkl
 test/__pycache__/
 
 
@@ -14,6 +15,6 @@ prp
 
 *.ipynb_checkpoints
 
-delphes/*.sif
 
 train_loader_mlpf.pth
+mlpf_playground.py

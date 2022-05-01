@@ -20,6 +20,7 @@ try:
     from torch_cluster import knn
 except ImportError:
     knn = None
+from torch_cluster import knn_graph
 
 
 class MLPF(nn.Module):
@@ -35,7 +36,7 @@ class MLPF(nn.Module):
     def __init__(self,
                  input_dim=12, output_dim_id=6, output_dim_p4=6,
                  embedding_dim=64, hidden_dim1=64, hidden_dim2=60,
-                 num_convs=2, space_dim=4, propagate_dim=30, k=16):
+                 num_convs=2, space_dim=4, propagate_dim=30, k=8):
         super(MLPF, self).__init__()
 
         # self.act = nn.ReLU
@@ -201,6 +202,7 @@ class GravNetConv_LRP(MessagePassing):
         s_r: Tensor = self.lin_s(x[1]) if is_bipartite else s_l
 
         edge_index = knn(s_l, s_r, self.k, b[0], b[1]).flip([0])
+        # edge_index = knn_graph(s_l, self.k, b[0], b[1]).flip([0])
 
         edge_weight = (s_l[edge_index[0]] - s_r[edge_index[1]]).pow(2).sum(-1)
         edge_weight = torch.exp(-10. * edge_weight)  # 10 gives a better spread
@@ -235,13 +237,14 @@ class GravNetConv_LRP(MessagePassing):
 # model = MLPF()
 #
 # # load the dataset
-# loader = torch.load('../train_loader_mlpf.pth')
+# loader = torch.load('../test_loader.pth')
 #
-# for batch in loader:
-#     print(batch)
+# for batch in test_loader:
 #     break
+#
+# batch
 #
 # preds, A, msg_activations = model(batch)
 #
-# A.keys()
-# msg_activations.keys()
+# batch
+# batch.batch

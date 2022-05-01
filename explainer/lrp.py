@@ -151,7 +151,7 @@ class LRP():
         torch.cuda.empty_cache()
 
         W = layer.weight.detach()   # get weight matrix
-        W = torch.transpose(W, 0, 1)
+        W = torch.transpose(W, 0, 1)    # sanity check of forward pass: (torch.matmul(x, W) + layer.bias) == layer(x)
 
         # for the output layer, pick the part of the weight matrix connecting only to the neuron you're attempting to explain
         if layer == list(self.model.modules())[-1]:
