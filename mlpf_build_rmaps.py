@@ -24,7 +24,7 @@ from explainer import LRP_MLPF
 from models import MLPF
 
 
-# this script makes Rtensors from a processed list of R_tensors
+# this script makes Rmaps from a processed list of R_tensors
 
 
 size = 100
@@ -64,13 +64,19 @@ def indexing_by_relevance(num, pid):
     return l
 
 
-def process_Rtensor(node, Rtensor):
+def process_Rtensor(node, Rtensor, neighbors):
     """
     Given an Rtensor ~ (nodes, in_features) does some preprocessing on it
-        - absolutizes it
-        - normalizes it
-        - sort the rows/neighbors by relevance (aside from the first row which is always the node itself)
+
+    Args
+        node: an index for the node we're prcoessing the Rmap for
+        Rtensor: the tensor/graph of Rscores for that node
+        neighbors: # of neighbors to keep when processing the Rmap
+
+    Returns
+        an absolutized, normalized, and sorted Rtensor (sorted the rows/neighbors by relevance aside from the first row which is always the node itself)
     """
+
     Rtensor = Rtensor.absolute()
     Rtensor = Rtensor / Rtensor.sum()
 
@@ -84,7 +90,7 @@ def process_Rtensor(node, Rtensor):
     Rtensor[1:] = Rtensor[1:][rank_relevance_msk]
 
     # Rtensor[Rtensor.sum(axis=1).bool()]   # remove zero rows
-    return Rtensor
+    return Rtensor[:neighbors + 1]
 
 
 def make_Rmap(Rtensors, pid='chhadron', neighbors=2):
@@ -98,7 +104,7 @@ def make_Rmap(Rtensors, pid='chhadron', neighbors=2):
         neighbors: how many neighbors to show in the Rmap
     """
 
-    Rtensor_correct, Rtensor_incorrect = torch.zeros(size, in_features), torch.zeros(size, in_features)
+    Rtensor_correct, Rtensor_incorrect = torch.zeros(neighbors + 1, in_features), torch.zeros(neighbors + 1, in_features)
     num_Rtensors_correct, num_Rtensors_incorrect = 0, 0
 
     for event, event_Rscores in enumerate(Rtensors):
@@ -110,14 +116,15 @@ def make_Rmap(Rtensors, pid='chhadron', neighbors=2):
             if label_to_class[true_class] == pid:
                 # check if the node was correctly classified
                 if pred_class == true_class:
-                    Rtensor_correct = Rtensor_correct + process_Rtensor(node, node_Rtensor)
+                    Rtensor_correct = Rtensor_correct + process_Rtensor(node, node_Rtensor, neighbors)
                     num_Rtensors_correct = num_Rtensors_correct + 1
                 else:
-                    Rtensor_incorrect = Rtensor_incorrect + process_Rtensor(node, node_Rtensor)
+                    Rtensor_incorrect = Rtensor_incorrect + process_Rtensor(node, node_Rtensor, neighbors)
                     num_Rtensors_incorrect = num_Rtensors_incorrect + 1
 
     Rtensor_correct = Rtensor_correct / num_Rtensors_correct
     Rtensor_incorrect = Rtensor_incorrect / num_Rtensors_incorrect
+    tot_num = num_Rtensors_correct + num_Rtensors_incorrect
 
     features = ["Track|cluster", "$p_{T}|E_{T}$", r"$\eta$", r'$\phi$',
                 "P|E", r"$\eta_\mathrm{out}|E_{em}$", r"$\phi_\mathrm{out}|E_{had}$",
@@ -125,27 +132,33 @@ def make_Rmap(Rtensors, pid='chhadron', neighbors=2):
 
     node_types = indexing_by_relevance(neighbors + 1, pid)    # only plot 6 rows/neighbors in Rmap
 
-    # plot correct first first
-    fig, ax = plt.subplots(figsize=(20, 10))
-    if out_neuron < 6:
-        ax.set_title(f"Average relevance score matrix for {pid}s's classification score of correctly classified elements", fontsize=26)
-    else:
-        ax.set_title(f"Average relevance score matrix for {pid}'s {label_to_p4[out_neuron]} of correctly classified elements", fontsize=26)
+    # for status, var in {'correct': Rtensor_correct, 'incorrect': Rtensor_incorrect}.items():
+    for status, var in {'incorrect': Rtensor_incorrect}.items():
+        if status == 'incorrect':
+            fraction = num_Rtensors_incorrect
+        else:
+            fraction = num_Rtensors_correct
 
-    ax.set_xticks(np.arange(len(features)))
-    ax.set_yticks(np.arange(len(node_types)))
-    ax.set_xticklabels(features, fontsize=22)
-    ax.set_yticklabels(node_types, fontsize=20)
-    for col in range(len(features)):
-        for row in range(len(node_types)):
-            text = ax.text(col, row, round(Rtensor_incorrect[row, col].item(), 5),
-                           ha="center", va="center", color="w", fontsize=14)
+        fig, ax = plt.subplots(figsize=(20, 10))
+        if out_neuron < 6:
+            ax.set_title(f"Average relevance score matrix for {pid}s's classification score of {fraction}/{tot_num} {status}ly classified elements", fontsize=26)
+        else:
+            ax.set_title(f"Average relevance score matrix for {pid}'s {label_to_p4[out_neuron]} of {fraction}/{tot_num} {status}ly classified elements", fontsize=26)
 
-    plt.imshow((Rtensor_incorrect[:neighbors + 1] + 1e-12).numpy(),
-               cmap='copper', aspect='auto', norm=matplotlib.colors.LogNorm(vmin=1e-3))
+        ax.set_xticks(np.arange(len(features)))
+        ax.set_yticks(np.arange(len(node_types)))
+        ax.set_xticklabels(features, fontsize=22)
+        ax.set_yticklabels(node_types, fontsize=20)
+        for col in range(len(features)):
+            for row in range(len(node_types)):
+                text = ax.text(col, row, round(var[row, col].item(), 5),
+                               ha="center", va="center", color="w", fontsize=14)
 
-    plt.colorbar(label='R-score', orientation="vertical")
-    plt.savefig('Rtensor_incorrect.pdf')
+        plt.imshow((var[:neighbors + 1] + 1e-12).numpy(),
+                   cmap='copper', aspect='auto', norm=matplotlib.colors.LogNorm(vmin=1e-3))
+
+        plt.colorbar(label='R-score', orientation="vertical")
+        plt.savefig(f'Rmap_{status}.pdf')
 
 
 if __name__ == "__main__":
@@ -157,4 +170,4 @@ if __name__ == "__main__":
     with open('preds_list.pkl',  'rb') as f:
         preds = pkl.load(f)
 
-    make_Rmap(Rtensors, pid='chhadron')
+    make_Rmap(Rtensors, pid='chhadron', neighbors=1)
