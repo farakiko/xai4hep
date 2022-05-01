@@ -20,9 +20,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 from torch_geometric.data import Data, DataLoader, DataListLoader, Batch
 
-from explainer import LRP_MLPF
-from models import MLPF
-
 
 # this script makes Rmaps from a processed list of R_tensors
 
@@ -163,11 +160,11 @@ def make_Rmap(Rtensors, pid='chhadron', neighbors=2):
 
 if __name__ == "__main__":
 
-    with open('Rtensors_list.pkl',  'rb') as f:
+    with open('../Rtensors_list.pkl',  'rb') as f:
         Rtensors = pkl.load(f)
-    with open('inputs_list.pkl',  'rb') as f:
+    with open('../inputs_list.pkl',  'rb') as f:
         inputs = pkl.load(f)
-    with open('preds_list.pkl',  'rb') as f:
+    with open('../preds_list.pkl',  'rb') as f:
         preds = pkl.load(f)
 
     make_Rmap(Rtensors, pid='chhadron', neighbors=1)

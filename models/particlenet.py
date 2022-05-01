@@ -119,26 +119,22 @@ class ParticleNet(nn.Module):
 
         return self.fc2(x)  # no softmax because pytorch cross entropy loss includes softmax
 
-    # TODO: !!
-    # def __repr__(self):
-    #     return ""
 
-
-in_features = 4
-dataset = jetnet.datasets.JetNet(jet_type='g')
-
-# load the dataset in a convenient pyg format
-dataset_pyg = []
-for data in dataset:
-    d = Data(x=data[0], y=data[1])
-    dataset_pyg.append(d)
-
-loader = DataLoader(dataset_pyg, batch_size=3, shuffle=False)
-
-for batch in loader:
-    break
-
-model = ParticleNet(node_feat_size=in_features)
-
-preds = model(batch)
-preds
+# in_features = 4
+# dataset = jetnet.datasets.JetNet(jet_type='g')
+#
+# # load the dataset in a convenient pyg format
+# dataset_pyg = []
+# for data in dataset:
+#     d = Data(x=data[0], y=data[1])
+#     dataset_pyg.append(d)
+#
+# loader = DataLoader(dataset_pyg, batch_size=3, shuffle=False)
+#
+# for batch in loader:
+#     break
+#
+# model = ParticleNet(node_feat_size=in_features)
+#
+# preds = model(batch)
+# preds
