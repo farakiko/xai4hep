@@ -10,13 +10,13 @@ import torch.nn as nn
 from typing import Optional, Union
 
 
-class FFN(nn.Module):
+class FCN(nn.Module):
     """
-    Showcase an example of an FFN model, with a skip connection, that can be explained by LRP
+    Showcase an example of an fully connected netwrok model, with a skip connection, that can be explained by LRP
     """
 
     def __init__(self, input_dim=3, hidden_dim=256, embedding_dim=40, output_dim=2):
-        super(FFN, self).__init__()
+        super(FCN, self).__init__()
 
         self.act = nn.ReLU
 

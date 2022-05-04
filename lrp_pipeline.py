@@ -11,7 +11,7 @@ from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 
 from explainer import LRP
-from models import FFN
+from models import FCN
 
 # this script builds a toy dataset, trains a simple FFN model on the dataset, and tests LRP
 
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     samples = dataset[:, :-1].float()
 
     # train sample model
-    model = FFN()
+    model = FCN()
     model.train()
     quick_train(device, model, epochs=3, dataset=dataset, batch_size=4)
 
