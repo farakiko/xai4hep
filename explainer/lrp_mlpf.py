@@ -150,10 +150,6 @@ class LRP_MLPF():
     def eps_rule(self, layer, layer_name, x, R_tensor_old, neuron_to_explain, msg_passing_layer):
         """
         Implements the lrp-epsilon rule presented in the following reference: https://doi.org/10.1007/978-3-030-28954-6_10.
-        The computation is composed of 3 main steps:
-            (1) multiply elementwise each column in the matrix W by the vector x to get the matrix Z (we name it Z to be consistent with the reference's notation)
-            (2) divide each column in Z by the sum of the its elements
-            (3) matrix multiply the Z matrix and Rscores_old vector to obtain the Rscores_new vector
 
         Can accomodate message_passing layers if the adjacency matrix and the activations before the message_passing are provided.
         The trick (or as we like to call it, the message_passing hack) is in
@@ -183,16 +179,14 @@ class LRP_MLPF():
         if layer == list(self.model.modules())[-1]:
             W = W[:, neuron_to_explain].reshape(-1, 1)
 
-        # (1) multiply elementwise each column in the matrix W by the vector x to get the Z matrix
-        Z = x.unsqueeze(-1) * W     # unsqueeze will add a necessary new dimension to x and then we use broadcasting
-
-        # (2) divide each column in Z by the sum of the its elements
-        Z = Z / (Z.sum(axis=1, keepdim=True) + torch.sign((Z.sum(axis=1, keepdim=True))) * self.epsilon)    # epsilon is introduced for stability (lrp-epsilon rule)
-
-        # (3) matrix multiply Z and Rscores_old to obtain Rscores_new
+        # (1) compute the denominator
+        denominator = torch.matmul(x, W) + self.epsilon
+        # (2) scale the Rscores
         if msg_passing_layer:  # message_passing hack
             R_tensor_old = torch.transpose(R_tensor_old, 1, 2)
-        R_tensor_new = torch.matmul(Z, R_tensor_old.unsqueeze(-1)).squeeze()
+        scaledR = R_tensor_old / denominator
+        # (3) compute the new Rscores
+        R_tensor_new = torch.matmul(scaledR, torch.transpose(W, 0, 1)) * x
 
         # checking conservation of Rscores for a given random node (# 17)
         rtol = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]

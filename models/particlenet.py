@@ -138,3 +138,4 @@ class ParticleNet(nn.Module):
 #
 # preds = model(batch)
 # preds
+# model
