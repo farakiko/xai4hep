@@ -133,6 +133,11 @@ class LRP():
         """
         Implements the lrp-epsilon rule presented in the following reference: https://doi.org/10.1007/978-3-030-28954-6_10.
 
+        The computation is composed of 3 steps:
+            (1) compute the denominator: a matrix multiplication of the layer's weight matrix W and the activations
+            (2) scale the old Rscores by the denominator
+            (3) matrix multiply the weight matrix W and the "scaled" Rscores, then elementwise multiply with the activations to get the new Rscores
+
         Args:
             layer: a torch.nn module with a corresponding weight matrix W
             x: vector containing the activations of the previous layer
@@ -141,11 +146,6 @@ class LRP():
 
         Returns:
             Rscores_new: a vector containing the computed Rscores of the previous layer
-
-        The computation is composed of 3 main steps:
-            (1) multiply elementwise each column in the matrix W by the vector x to get the matrix Z (we name it Z to be consistent with the reference's notation)
-            (2) divide each column in Z by the sum of the its elements
-            (3) matrix multiply the Z matrix and Rscores_old vector to obtain the Rscores_new vector
         """
 
         torch.cuda.empty_cache()
@@ -157,14 +157,12 @@ class LRP():
         if layer == list(self.model.modules())[-1]:
             W = W[:, neuron_to_explain].reshape(-1, 1)
 
-        # (1) multiply elementwise each column in the matrix W by the vector x to get the Z matrix
-        Z = x.unsqueeze(-1) * W     # unsqueeze will add a necessary new dimension to x and then we use broadcasting
-
-        # (2) divide each column in Z by the sum of the its elements
-        Z = Z / (Z.sum(axis=1, keepdim=True) + self.epsilon)    # epsilon is introduced for stability (lrp-epsilon rule)
-
-        # (3) matrix multiply Z and Rscores_old to obtain Rscores_new
-        Rscores_new = torch.matmul(Z, Rscores_old.unsqueeze(-1)).squeeze()
+        # (1) compute the denominator
+        denominator = torch.matmul(x, W) + self.epsilon
+        # (2) scale the old Rscores
+        scaledR = R_tensor_old / denominator
+        # (3) compute the new Rscores
+        R_tensor_new = torch.matmul(scaledR, torch.transpose(W, 0, 1)) * x
 
         print('- Finished computing Rscores')
 
