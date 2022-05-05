@@ -160,9 +160,9 @@ class LRP():
         # (1) compute the denominator
         denominator = torch.matmul(x, W) + self.epsilon
         # (2) scale the old Rscores
-        scaledR = R_tensor_old / denominator
+        scaledR = Rscores_old / denominator
         # (3) compute the new Rscores
-        R_tensor_new = torch.matmul(scaledR, torch.transpose(W, 0, 1)) * x
+        Rscores_new = torch.matmul(scaledR, torch.transpose(W, 0, 1)) * x
 
         print('- Finished computing Rscores')
 
