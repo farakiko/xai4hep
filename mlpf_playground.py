@@ -30,7 +30,8 @@ from models import MLPF
 python3 -u mlpf_playground.py --size=400
 """
 parser = argparse.ArgumentParser()
-parser.add_argument("--size",     type=int,           default=100,      help="size of event")
+parser.add_argument("--size",     type=int,          default=100,      help="size of event")
+parser.add_argument("--loader",   type=str,          default='./test_loader.pth',      help="path to dataloader")
 args = parser.parse_args()
 
 size = args.size
@@ -91,7 +92,7 @@ if __name__ == "__main__":
         device = torch.device('cpu')
 
     # get sample dataset
-    loader = torch.load('test_loader.pth')
+    loader = torch.load(args.loader)
 
     # train sample model
     model = MLPF(num_convs=2)
