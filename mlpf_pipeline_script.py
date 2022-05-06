@@ -25,6 +25,11 @@ from models import MLPF
 
 # this script runs lrp on a trained MLPF model
 
+"""
+e.g run locally as:
+python3 -u mlpf_pipeline_script.py --model_weights='/particleflowvol/test_tmp_delphes/experiments/MLPF_gen_ntrain_1_nepochs_1_clf_reg/epoch_0_weights.pth' --model_kwargs='/particleflowvol/test_tmp_delphes/experiments/MLPF_gen_ntrain_1_nepochs_1_clf_reg/model_kwargs.pkl' --outpath='/particleflowvol/test_tmp_delphes/experiments/MLPF_gen_ntrain_1_nepochs_1_clf_reg/' --size=400
+"""
+
 parser = argparse.ArgumentParser()
 
 # for saving the model
@@ -33,6 +38,7 @@ parser.add_argument("--model_weights",  type=str,           default="./data/test
 parser.add_argument("--model_kwargs",   type=str,           default="./data/test_tmp_delphes/experiments/MLPF_gen_ntrain_1_nepochs_1_clf_reg/model_kwargs.pkl",            help="path to a trained model's model.kwargs.pkl")
 parser.add_argument("--out_neuron",     type=int,           default=0,                                                   help="the output neuron you wish to explain")
 parser.add_argument("--outpath",        type=str,           default='./',                                                help="path to save the Rtensors")
+parser.add_argument("--size",           type=int,           default=100,      help="size of event")
 
 args = parser.parse_args()
 
@@ -83,6 +89,20 @@ if __name__ == "__main__":
 
     for i, event in enumerate(loader):
         print(f'Explaining event # {i}')
+
+        # break it down to a smaller part for lrp (to avoid memory issues)
+        def get_small_batch(event, size):
+            small_batch = Batch()
+            small_batch.x = event.x[:size]
+            small_batch.ygen = event.ygen[:size]
+            small_batch.ygen_id = event.ygen_id[:size]
+            small_batch.ycand = event.ycand[:size]
+            small_batch.ycand_id = event.ycand_id[:size]
+            small_batch.batch = event.batch[:size]
+            return small_batch
+
+        event = get_small_batch(event, size=args.size)
+        print(f'Testing lrp on: \n {event}')
 
         # run lrp on sample model
         model.eval()
