@@ -99,3 +99,4 @@ if __name__ == "__main__":
             pkl.dump(preds_list, f)
         with open(f'{args.outpath}/inputs_list.pkl', 'wb') as f:
             pkl.dump(inputs_list, f)
+        break
