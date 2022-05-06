@@ -44,7 +44,7 @@ parser.add_argument("--out_neuron",     type=int,           default=0,      help
 parser.add_argument("--pid",            type=str,           default="chhadron",     help="Which model to load")
 parser.add_argument("--run_lrp",        dest='run_lrp',     action='store_true', help="runs lrp")
 parser.add_argument("--make_rmaps",     dest='make_rmaps',  action='store_true', help="makes rmaps")
-parser.add_argument("--size",     type=int,           default=0,      help="batch the events to fit in memory")
+parser.add_argument("--size",           type=int,           default=0,      help="batch the events to fit in memory")
 
 args = parser.parse_args()
 
