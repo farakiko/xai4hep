@@ -92,11 +92,11 @@ if __name__ == "__main__":
         Rtensors_list.append(Rtensor.detach().to('cpu'))
         preds_list.append(pred.detach().to('cpu'))
         inputs_list.append(input.detach().to('cpu').to_dict())
-
-        with open(f'{args.outpath}/Rtensors_list.pkl', 'wb') as f:
-            pkl.dump(Rtensors_list, f)
-        with open(f'{args.outpath}/preds_list.pkl', 'wb') as f:
-            pkl.dump(preds_list, f)
-        with open(f'{args.outpath}/inputs_list.pkl', 'wb') as f:
-            pkl.dump(inputs_list, f)
         break
+
+    with open(f'{args.outpath}/Rtensors_list.pkl', 'wb') as f:
+        pkl.dump(Rtensors_list, f)
+    with open(f'{args.outpath}/preds_list.pkl', 'wb') as f:
+        pkl.dump(preds_list, f)
+    with open(f'{args.outpath}/inputs_list.pkl', 'wb') as f:
+        pkl.dump(inputs_list, f)
