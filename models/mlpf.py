@@ -46,6 +46,10 @@ class MLPF(nn.Module):
         self.nn1 = nn.Sequential(
             nn.Linear(input_dim, hidden_dim1),
             self.act(),
+            nn.Linear(hidden_dim1, hidden_dim1),
+            self.act(),
+            nn.Linear(hidden_dim1, hidden_dim1),
+            self.act(),
             nn.Linear(hidden_dim1, embedding_dim),
         )
 
@@ -57,12 +61,20 @@ class MLPF(nn.Module):
         self.nn2 = nn.Sequential(
             nn.Linear(input_dim + embedding_dim, hidden_dim2),
             self.act(),
+            nn.Linear(hidden_dim2, hidden_dim2),
+            self.act(),
+            nn.Linear(hidden_dim2, hidden_dim2),
+            self.act(),
             nn.Linear(hidden_dim2, output_dim_id),
         )
 
         # (4) DNN layer: regressing p4
         self.nn3 = nn.Sequential(
             nn.Linear(input_dim + output_dim_id, hidden_dim2),
+            self.act(),
+            nn.Linear(hidden_dim2, hidden_dim2),
+            self.act(),
+            nn.Linear(hidden_dim2, hidden_dim2),
             self.act(),
             nn.Linear(hidden_dim2, output_dim_p4),
         )

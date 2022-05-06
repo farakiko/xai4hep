@@ -27,8 +27,10 @@ from models import MLPF
 # this script builds a toy dataset, trains a simple FFN model on the dataset, and tests LRP
 
 """
+e.g run locally as:
 python3 -u mlpf_playground.py --size=400
 """
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--size",     type=int,          default=100,      help="size of event")
 parser.add_argument("--loader",   type=str,          default='./test_loader.pth',      help="path to dataloader")

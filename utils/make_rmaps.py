@@ -9,16 +9,11 @@ import mplhep as hep
 import pandas as pd
 
 import torch
-import torch_geometric
-from torch_geometric.nn import GravNetConv
 
 import torch.nn as nn
-import torch.nn.functional as F
-from torch.nn import Sequential as Seq, Linear as Lin, ReLU
 from sklearn.metrics import accuracy_score
 import matplotlib
 import matplotlib.pyplot as plt
-from torch_geometric.data import Data, DataLoader, DataListLoader, Batch
 
 
 # this script makes Rmaps from a processed list of R_tensors
@@ -169,15 +164,3 @@ def make_Rmaps(outpath, Rtensors, inputs, preds, pid='chhadron', neighbors=2, ou
             os.makedirs(rmap_dir)
 
         plt.savefig(f'{rmap_dir}/Rmap_{pid}_{status}_neuron_{out_neuron}.pdf')
-
-
-if __name__ == "__main__":
-
-    with open('../Rtensors_list.pkl',  'rb') as f:
-        Rtensors = pkl.load(f)
-    with open('../inputs_list.pkl',  'rb') as f:
-        inputs = pkl.load(f)
-    with open('../preds_list.pkl',  'rb') as f:
-        preds = pkl.load(f)
-
-    make_Rmaps('./', Rtensors, inputs, preds, pid='chhadron', neighbors=3, out_neuron=0)
