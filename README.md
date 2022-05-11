@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="900" src="https://raw.githubusercontent.com/farakiko/xai4hep/master/docs/_static/images/mlpf_rscores.png" />
+  <img width="900" src="https://raw.githubusercontent.com/farakiko/xai4hep/dev/docs/_static/images/mlpf_rscores.png" />
 </p>
 
 # xai4hep
