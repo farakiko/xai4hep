@@ -1,15 +1,16 @@
 <p align="center">
-  <img width="400" src="https://raw.githubusercontent.com/farakiko/xai4hep/master/docs/_static/images/mlpf_rscores.png" />
+  <img width="900" src="https://raw.githubusercontent.com/farakiko/xai4hep/dev/docs/_static/images/mlpf_rscores.png" />
 </p>
 
 # xai4hep
 
 XAI toolbox for interpreting state-of-the-art ML algorithms for high energy physics.
 
-xai4hep provides necessary implementations of explainable AI (XAI) techniques for state-of-the-art graph neural networks (GNNs) developed for various tasks at the LHC-CERN. Models include: machine-learned particle flow (MLPF), the interaction network (IN), ParticleNet. Currently, the layerwise-relevance propagation (LRP) technique is implemented for such models, and additional XAI techniques are under development.
+xai4hep provides necessary implementations of explainable AI (XAI) techniques for state-of-the-art graph neural networks (GNNs) developed for various tasks at the LHC-CERN. Models include: machine-learned particle flow (MLPF), the interaction network (IN), and ParticleNet. Currently, the layerwise-relevance propagation (LRP) technique is implemented for such models, and additional XAI techniques are under development.
 
 
 ## Setup
+
 
 
 ## Quickstart
