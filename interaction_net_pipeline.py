@@ -281,9 +281,9 @@ if __name__ == "__main__":
         # torch.save(model.state_dict(), 'interaction_net_weights.pth')
 
     # load a pre-trained model if available
-    elif os.path.isfile('interaction_net_weights.pth'):
+    elif os.path.isfile('junk/interaction_net_weights.pth'):
         print('Will load a pre-trained model...')
-        state_dict = torch.load('interaction_net_weights.pth')
+        state_dict = torch.load('junk/interaction_net_weights.pth')
         model.load_state_dict(state_dict)
 
     model.eval()
