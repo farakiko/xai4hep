@@ -1,13 +1,9 @@
 import itertools
 import numpy as np
-import jetnet
-from torch_geometric.data import Data, DataListLoader, Batch
-from torch_geometric.loader import DataLoader
-
 import torch
 import torch.nn as nn
-
-# only vertex-particle branch
+from torch import Tensor
+from torch.nn import Linear
 
 
 class INTagger(nn.Module):
@@ -35,6 +31,7 @@ class INTagger(nn.Module):
         self.assign_matrices_SV()
         self.batchnorm_x = nn.BatchNorm1d(self.P)
         self.batchnorm_y = nn.BatchNorm1d(self.S)
+        self.sigmoid = torch.nn.Sigmoid()
 
         self.fr = nn.Sequential(nn.Linear(2 * self.P, self.hidden),
                                 nn.BatchNorm1d(self.hidden),
@@ -105,6 +102,7 @@ class INTagger(nn.Module):
         return Ebar_pv
 
     def forward(self, x, y):
+        # x, y = a
         x = self.batchnorm_x(x)  # [batch, P, N]
         y = self.batchnorm_y(y)  # [batch, S, Nv]
 
@@ -126,31 +124,6 @@ class INTagger(nn.Module):
         # Classification MLP
         N = self.fc_fixed(N)  # [batch, Do]
 
+        # added by farouk
+        N = self.sigmoid(N.reshape(-1))
         return N
-
-
-in_features = 4
-dataset = jetnet.datasets.JetNet(jet_type='g')
-
-# load the dataset in a convenient pyg format
-dataset_pyg = []
-for data in dataset:
-    d = Data(x=data[0], y=data[1])
-    dataset_pyg.append(d)
-
-loader = DataLoader(dataset_pyg, batch_size=3, shuffle=False)
-
-for batch in loader:
-    break
-
-model = INTagger(2, 2, 1, 2, 2, 2, 2, 2)
-model
-preds = model(batch, batch)
-preds
-model
-
-
-a = torch.randn(4, 4)
-
-a
-torch.einsum('ii->i', a)

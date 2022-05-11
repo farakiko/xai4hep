@@ -9,25 +9,14 @@ import mplhep as hep
 import pandas as pd
 
 import torch
-import torch_geometric
-from torch_geometric.nn import GravNetConv
 
 import torch.nn as nn
-import torch.nn.functional as F
-from torch.nn import Sequential as Seq, Linear as Lin, ReLU
 from sklearn.metrics import accuracy_score
 import matplotlib
 import matplotlib.pyplot as plt
-from torch_geometric.data import Data, DataLoader, DataListLoader, Batch
 
 
 # this script makes Rmaps from a processed list of R_tensors
-
-
-size = 100
-in_features = 12
-out_neuron = 0
-
 
 label_to_class = {0: 'null',
                   1: 'chhadron',
@@ -73,6 +62,7 @@ def process_Rtensor(node, Rtensor, neighbors):
     Returns
         an absolutized, normalized, and sorted Rtensor (sorted the rows/neighbors by relevance aside from the first row which is always the node itself)
     """
+    in_features = Rtensor.shape[-1]
 
     Rtensor = Rtensor.absolute()
     Rtensor = Rtensor / Rtensor.sum()
@@ -90,7 +80,7 @@ def process_Rtensor(node, Rtensor, neighbors):
     return Rtensor[:neighbors + 1]
 
 
-def make_Rmap(Rtensors, pid='chhadron', neighbors=2):
+def make_Rmaps(outpath, Rtensors, inputs, preds, pid='chhadron', neighbors=2, out_neuron=0):
     """
     Recall each event has a corresponding Rmap per node in the event.
     This function process the Rmaps for a given pid.
@@ -100,6 +90,7 @@ def make_Rmap(Rtensors, pid='chhadron', neighbors=2):
         pid: class label to process (choices are ['null', 'chhadron', 'nhadron', photon', electron', muon'])
         neighbors: how many neighbors to show in the Rmap
     """
+    in_features = Rtensors[0].shape[-1]
 
     Rtensor_correct, Rtensor_incorrect = torch.zeros(neighbors + 1, in_features), torch.zeros(neighbors + 1, in_features)
     num_Rtensors_correct, num_Rtensors_incorrect = 0, 0
@@ -129,18 +120,23 @@ def make_Rmap(Rtensors, pid='chhadron', neighbors=2):
 
     node_types = indexing_by_relevance(neighbors + 1, pid)    # only plot 6 rows/neighbors in Rmap
 
-    # for status, var in {'correct': Rtensor_correct, 'incorrect': Rtensor_incorrect}.items():
-    for status, var in {'incorrect': Rtensor_incorrect}.items():
-        if status == 'incorrect':
-            fraction = num_Rtensors_incorrect
+    for status, var in {'correct': Rtensor_correct, 'incorrect': Rtensor_incorrect}.items():
+        print(f'Making Rmaps for {status}ly classified {pid}')
+        if status == 'correct':
+            num = num_Rtensors_correct
         else:
-            fraction = num_Rtensors_correct
+            num = num_Rtensors_incorrect
+
+        print(f'fraction is: {num}/{tot_num}')
+
+        if num == 0:
+            continue
 
         fig, ax = plt.subplots(figsize=(20, 10))
         if out_neuron < 6:
-            ax.set_title(f"Average relevance score matrix for {pid}s's classification score of {fraction}/{tot_num} {status}ly classified elements", fontsize=26)
+            ax.set_title(f"Average relevance score matrix for {pid}s's classification score of {num}/{tot_num} {status}ly classified elements", fontsize=26)
         else:
-            ax.set_title(f"Average relevance score matrix for {pid}'s {label_to_p4[out_neuron]} of {fraction}/{tot_num} {status}ly classified elements", fontsize=26)
+            ax.set_title(f"Average relevance score matrix for {pid}'s {label_to_p4[out_neuron]} of {num}/{tot_num} {status}ly classified elements", fontsize=26)
 
         ax.set_xticks(np.arange(len(features)))
         ax.set_yticks(np.arange(len(node_types)))
@@ -155,16 +151,10 @@ def make_Rmap(Rtensors, pid='chhadron', neighbors=2):
                    cmap='copper', aspect='auto', norm=matplotlib.colors.LogNorm(vmin=1e-3))
 
         plt.colorbar(label='R-score', orientation="vertical")
-        plt.savefig(f'Rmap_{status}.pdf')
 
+        # create directory to hold Rmaps
+        rmap_dir = outpath + '/rmaps/'
+        if not os.path.exists(rmap_dir):
+            os.makedirs(rmap_dir)
 
-if __name__ == "__main__":
-
-    with open('../Rtensors_list.pkl',  'rb') as f:
-        Rtensors = pkl.load(f)
-    with open('../inputs_list.pkl',  'rb') as f:
-        inputs = pkl.load(f)
-    with open('../preds_list.pkl',  'rb') as f:
-        preds = pkl.load(f)
-
-    make_Rmap(Rtensors, pid='chhadron', neighbors=1)
+        plt.savefig(f'{rmap_dir}/Rmap_{pid}_{status}_neuron_{out_neuron}.pdf')
