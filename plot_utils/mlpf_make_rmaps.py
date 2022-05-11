@@ -18,12 +18,6 @@ import matplotlib.pyplot as plt
 
 # this script makes Rmaps from a processed list of R_tensors
 
-
-size = 100
-in_features = 12
-out_neuron = 0
-
-
 label_to_class = {0: 'null',
                   1: 'chhadron',
                   2: 'nhadron',
@@ -156,7 +150,7 @@ def make_Rmaps(outpath, Rtensors, inputs, preds, pid='chhadron', neighbors=2, ou
         plt.imshow((var[:neighbors + 1] + 1e-12).numpy(),
                    cmap='copper', aspect='auto', norm=matplotlib.colors.LogNorm(vmin=1e-3))
 
-        # plt.colorbar(label='R-score', orientation="vertical")
+        plt.colorbar(label='R-score', orientation="vertical")
 
         # create directory to hold Rmaps
         rmap_dir = outpath + '/rmaps/'

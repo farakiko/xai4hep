@@ -22,20 +22,12 @@ from torch_geometric.data import Data, DataLoader, DataListLoader, Batch
 
 from explainer import LRP_MLPF
 from models import MLPF
-from utils import make_Rmaps
-
-# this script runs lrp on a trained MLPF model
-
-"""
-e.g run locally as:
-python3 -u mlpf_pipeline_script.py --model_weights='/particleflowvol/test_tmp_delphes/experiments/MLPF_gen_ntrain_1_nepochs_1_clf_reg/epoch_0_weights.pth' --model_kwargs='/particleflowvol/test_tmp_delphes/experiments/MLPF_gen_ntrain_1_nepochs_1_clf_reg/model_kwargs.pkl' --outpath='/particleflowvol/test_tmp_delphes/experiments/MLPF_gen_ntrain_1_nepochs_1_clf_reg/'
-"""
+from plot_utils import make_Rmaps
 
 # this script runs lrp on a trained MLPF model
 
 parser = argparse.ArgumentParser()
 
-# for saving the model
 parser.add_argument("--loader",         type=str,           default='./test_loader.pth',                                 help="path to a saved pytorch DataLoader")
 parser.add_argument("--outpath",        type=str,           default='./data/test_tmp_delphes/experiments/',       help="path to the trained model directory")
 parser.add_argument("--load_model",     type=str,           default="",     help="Which model to load")

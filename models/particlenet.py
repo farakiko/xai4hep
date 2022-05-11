@@ -119,34 +119,34 @@ class ParticleNet(nn.Module):
 
         return self.fc2(x)  # no softmax because pytorch cross entropy loss includes softmax
 
-
-batch_size = 100
-out_neuron = 0
-
-if __name__ == "__main__":
-    # Check if the GPU configuration and define the global base device
-    if torch.cuda.device_count() > 0:
-        print(f'Will use {torch.cuda.device_count()} gpu(s)')
-        print("GPU model:", torch.cuda.get_device_name(0))
-        device = torch.device('cuda:0')
-    else:
-        print('Will use cpu')
-        device = torch.device('cpu')
-
-    # get sample dataset
-    in_features = 4
-    dataset = jetnet.datasets.JetNet(jet_type='g')
-
-    # load the dataset in a convenient pyg format
-    dataset_pyg = []
-    for data in dataset:
-        d = Data(x=data[0], y=data[1])
-        dataset_pyg.append(d)
-
-    loader = DataLoader(dataset_pyg, batch_size=batch_size, shuffle=False)
-
-    # # train sample model
-    model = ParticleNet(node_feat_size=in_features)
+#
+# batch_size = 100
+# out_neuron = 0
+#
+# if __name__ == "__main__":
+#     # Check if the GPU configuration and define the global base device
+#     if torch.cuda.device_count() > 0:
+#         print(f'Will use {torch.cuda.device_count()} gpu(s)')
+#         print("GPU model:", torch.cuda.get_device_name(0))
+#         device = torch.device('cuda:0')
+#     else:
+#         print('Will use cpu')
+#         device = torch.device('cpu')
+#
+#     # get sample dataset
+#     in_features = 4
+#     dataset = jetnet.datasets.JetNet(jet_type='g')
+#
+#     # load the dataset in a convenient pyg format
+#     dataset_pyg = []
+#     for data in dataset:
+#         d = Data(x=data[0], y=data[1])
+#         dataset_pyg.append(d)
+#
+#     loader = DataLoader(dataset_pyg, batch_size=batch_size, shuffle=False)
+#
+#     # # train sample model
+#     model = ParticleNet(node_feat_size=in_features)
     # model.train()
     # quick_train(device, model, loader, epochs=4)
 
@@ -190,4 +190,4 @@ if __name__ == "__main__":
     #     pkl.dump(preds_list, f)
     # with open('inputs_list.pkl', 'wb') as f:
     #     pkl.dump(inputs_list, f)
-model
+# model
