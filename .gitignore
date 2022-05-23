@@ -4,6 +4,7 @@
 *.pt
 *.pdf
 data/*
+experiments/*
 *.pth
 *.pkl
 test/__pycache__/
