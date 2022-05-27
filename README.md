@@ -10,8 +10,11 @@ xai4hep provides necessary implementations of explainable AI (XAI) techniques fo
 
 
 ## Setup
-
-
+Have conda installed.
+```bash
+conda env create -f environment.yml
+conda activate xai
+```
 
 ## Quickstart
 

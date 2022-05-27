@@ -1,4 +1,4 @@
-name: mlpf
+name: xai
 channels:
     - pyg
     - pytorch
@@ -18,5 +18,5 @@ dependencies:
     - pip
     - pip:
       - jupyter-book
-      - captum      
+      - captum
       - jetnet
