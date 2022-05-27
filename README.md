@@ -18,14 +18,14 @@ conda activate xai
 
 ## Quickstart
 
-Running standard LRP on a toy dataset with a highly discriminatory feature:
+Running standard LRP for a simple fully connected network (FCN) on a toy dataset with a highly discriminatory feature:
 
 ```bash
-python lrp_pipeline.py
+python lrp_fcn_pipeline.py
 ```
 
 Running modified LRP for a trained MLPF model:
 
 ```bash
-python mlpf_pipeline.py --run_lrp --make_rmaps --load_model=$model_dir --load_epoch=$epoch --outpath=$path_to_model --loader=$dataloader
+python lrp_mlpf_pipeline.py --run_lrp --make_rmaps --load_model=$model_dir --load_epoch=$epoch --outpath=$path_to_model --loader=$dataloader
 ```
