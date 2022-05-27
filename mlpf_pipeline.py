@@ -29,7 +29,7 @@ from plot_utils import make_Rmaps
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--loader",         type=str,           default='junk/test_loader.pth',   help="path to a saved pytorch DataLoader")
-parser.add_argument("--outpath",        type=str,           default='./data/test_tmp_delphes/experiments/',  help="path to the trained model directory")
+parser.add_argument("--outpath",        type=str,           default='./experiments/',  help="path to the trained model directory")
 parser.add_argument("--load_model",     type=str,           default="",     help="Which model to load")
 parser.add_argument("--load_epoch",     type=int,           default=0,      help="Which epoch of the model to load")
 parser.add_argument("--out_neuron",     type=int,           default=0,      help="the output neuron you wish to explain")
