@@ -12,7 +12,7 @@ from typing import Optional, Union
 
 class FCN(nn.Module):
     """
-    Showcase an example of an fully connected netwrok model, with a skip connection, that can be explained by LRP
+    Showcase an example of an fully connected network model, with a skip connection, that can be explained by LRP
     """
 
     def __init__(self, input_dim=3, hidden_dim=256, embedding_dim=40, output_dim=2):

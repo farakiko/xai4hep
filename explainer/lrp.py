@@ -16,8 +16,8 @@ class LRP():
     """
     LRP class that introduces useful helper functions defined on a PyTorch model, and an explain method that runs layerwise-relevance propagation the model.
     Currently supports:
-        - Linear, activation, and BatchNorm1d layers in the model
-        - skip connections provided that they are input_features skip connections and that they are defined in the following order torch.cat[(input_features, ...)]
+        a. Linear, activation, and BatchNorm1d layers in the model
+        b. skip connections provided that they are input_features skip connections and that they are defined in the following order torch.cat[(input_features, ...)]
 
     """
 
@@ -134,9 +134,9 @@ class LRP():
         Implements the lrp-epsilon rule presented in the following reference: https://doi.org/10.1007/978-3-030-28954-6_10.
 
         The computation is composed of 3 steps:
-            (1) compute the denominator: a matrix multiplication of the layer's weight matrix W and the activations
-            (2) scale the old Rscores by the denominator
-            (3) matrix multiply the weight matrix W and the "scaled" Rscores, then elementwise multiply with the activations to get the new Rscores
+            a. compute the denominator: a matrix multiplication of the layer's weight matrix W and the activations
+            b. scale the old Rscores by the denominator
+            c. matrix multiply the weight matrix W and the "scaled" Rscores, then elementwise multiply with the activations to get the new Rscores
 
         Args:
             layer: a torch.nn module with a corresponding weight matrix W
