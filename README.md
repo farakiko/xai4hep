@@ -18,7 +18,7 @@ conda activate xai
 
 ## Quickstart
 
-Running standard LRP for a simple fully connected network (FCN) on a toy dataset with a highly discriminatory feature:
+Running standard LRP for a fully connected network (FCN) on a toy dataset with a highly discriminatory feature:
 
 ```bash
 python lrp_fcn_pipeline.py
