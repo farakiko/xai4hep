@@ -67,7 +67,7 @@ class LRP_ParticleNet():
                 activations[name] = input[0]
             return hook
 
-        # unpack the EdgeConv Block module to register appropriate hooks for the children modules
+        # unpack the EdgeConv Block module to register appropriate hooks for the child modules
         self.num_convs = self.model.num_edge_conv_blocks
         for name, module in self.model.named_modules():
             if 'edge_conv' in name:
