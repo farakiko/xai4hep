@@ -14,7 +14,7 @@ from torch.nn import Sequential as Seq, Linear as Lin, ReLU
 class LRP():
 
     """
-    LRP class that introduces useful helper functions defined on a PyTorch model, and an explain method that runs layerwise-relevance propagation the model.
+    LRP class that introduces useful helper functions defined on a PyTorch model, and an explain method that runs layerwise-relevance propagation.
     Currently supports:
         a. Linear, activation, and BatchNorm1d layers in the model
         b. skip connections provided that they are input_features skip connections and that they are defined in the following order torch.cat[(input_features, ...)]

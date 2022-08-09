@@ -31,7 +31,7 @@ class LRP_ParticleNet():
 
     """
     LRP class that introduces useful helper functions defined on a ParticleNet-based model,
-    and an explain method that runs layerwise-relevance propagation the model.
+    and an explain method that runs layerwise-relevance propagation.
     """
 
     def __init__(self, device, model, epsilon):
