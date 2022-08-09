@@ -24,6 +24,9 @@ from explainer import LRP_ParticleNet
 from models import ParticleNet
 import jetnet
 
+import warnings
+warnings.filterwarnings("ignore")
+
 # from plot_utils import make_Rmaps
 
 # this script runs lrp on a trained MLPF model
@@ -84,7 +87,7 @@ if __name__ == "__main__":
         Rscores_list, R_edges_list, edge_index_list = [], [], []
 
         for i, batch in enumerate(loader):
-            print(f'Explaining event # {i}')
+            print(f'Explaining jet # {i}')
 
             print(f'Testing lrp on: \n {batch}')
 

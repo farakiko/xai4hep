@@ -134,7 +134,6 @@ class LRP_ParticleNet():
         Rscores = Rscores[:, :self.model.kernel_sizes[idx + 1]]
 
         R_edges = self.redistribute_across_edge_pooling(Rscores, idx)
-
         print(f'Rscores after edge_pooling # {idx}: {round((R_edges.sum() + skip_connection_Rscores.sum()).item(),4)}')
 
         R_scores = self.redistribute_across_DNN(R_edges, idx)
