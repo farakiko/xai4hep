@@ -14,9 +14,9 @@ from torch.nn import Sequential as Seq, Linear as Lin, ReLU
 class LRP_MLPF():
 
     """
-    Extends the LRP class to act on graph datasets and GNNs based on the Gravnet layer (e.g. the MLPF model, see models.MLPF)
-    The main trick is to realize that the ".lin_s" layers in Gravnet are irrelevant for explanations so shall be skipped
-    The hack, however, is to substitute them precisely with the message_passing step
+    Extends the LRP class to act on graph datasets and GNNs based on the Gravnet layer (e.g. the MLPF model, see models.MLPF).
+    The main trick is to realize that the ".lin_s" layers in Gravnet are irrelevant for explanations so shall be skipped.
+    The hack, however, is to substitute them precisely with the message_passing step.
 
     Differences from standard LRP
         a. Rscores become tensors/graphs of input features per output neuron instead of vectors
@@ -181,10 +181,12 @@ class LRP_MLPF():
 
         # (1) compute the denominator
         denominator = torch.matmul(x, W) + self.epsilon
+
         # (2) scale the Rscores
         if msg_passing_layer:  # message_passing hack
             R_tensor_old = torch.transpose(R_tensor_old, 1, 2)
         scaledR = R_tensor_old / denominator
+
         # (3) compute the new Rscores
         R_tensor_new = torch.matmul(scaledR, torch.transpose(W, 0, 1)) * x
 
