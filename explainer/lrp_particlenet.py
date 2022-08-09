@@ -229,7 +229,7 @@ class LRP_ParticleNet():
     def redistribute_across_DNN(self, R_old, idx):
         """
         Implements the lrp-epsilon rule presented in the following reference: https://doi.org/10.1007/978-3-030-28954-6_10.
-        Follows simple DNN LRP redistribution over a the Sequential FC layers of a given EdgeConv DNN.
+        Follows simple DNN LRP redistribution over the Sequential FC layers of a given EdgeConv.
 
         takes R_old ~ (num_nodes*k, latent_dim_old)
         and returns R_new ~ (num_nodes*k, latent_dim_new)
