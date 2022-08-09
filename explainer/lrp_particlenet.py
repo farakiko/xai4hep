@@ -126,7 +126,7 @@ class LRP_ParticleNet():
         takes R_scores ~ (num_nodes, latent_dim_old)
         and returns R_scores ~ (num_nodes, latent_dim_new)
         """
-        if skip_connection_Rscores != None:     # if there are skip connections, add the Rscores of those node
+        if skip_connection_Rscores != None:     # if there are skip connections, add the Rscores of those nodes
             Rscores += skip_connection_Rscores
 
         # seperate the skip connection nodes from the actual nodes
@@ -226,7 +226,7 @@ class LRP_ParticleNet():
     lrp-epsilon rule
     """
 
-    def redistribute_across_DNN(self, R_old, idx):
+    def redistribute_across_DNN(self, Rscores, idx):
         """
         Implements the lrp-epsilon rule presented in the following reference: https://doi.org/10.1007/978-3-030-28954-6_10.
         Follows simple DNN LRP redistribution over the Sequential FC layers of a given EdgeConv.
@@ -246,7 +246,6 @@ class LRP_ParticleNet():
 
         layer_names.reverse()
 
-        R_new = R_old
         for name in layer_names:
             layer = self.name2layer(name)
 
@@ -257,14 +256,14 @@ class LRP_ParticleNet():
             denominator = torch.matmul(self.activations[name].detach(), W) + self.epsilon
 
             # (2) scale the Rscores
-            scaledR = R_new / denominator
+            scaledR = Rscores / denominator
 
             # (3) compute the new Rscores
-            R_new = torch.matmul(scaledR, torch.transpose(W, 0, 1)) * self.activations[name].detach()
+            Rscores = torch.matmul(scaledR, torch.transpose(W, 0, 1)) * self.activations[name].detach()
 
-        return R_new
+        return Rscores
 
-    def redistribute_across_fc_layer(self, R_old, layer_name, neuron_to_explain=None):
+    def redistribute_across_fc_layer(self, Rscores, layer_name, neuron_to_explain=None):
         """
         Implements the lrp-epsilon rule presented in the following reference: https://doi.org/10.1007/978-3-030-28954-6_10.
         Follows simple DNN LRP redistribution over a single FC layer.
@@ -287,12 +286,12 @@ class LRP_ParticleNet():
         denominator = torch.matmul(self.activations[layer_name], W) + self.epsilon
 
         # (2) scale the Rscores
-        scaledR = R_old / denominator
+        scaledR = Rscores / denominator
 
         # (3) compute the new Rscores
-        R_new = torch.matmul(scaledR, torch.transpose(W, 0, 1)) * self.activations[layer_name]
+        Rscores = torch.matmul(scaledR, torch.transpose(W, 0, 1)) * self.activations[layer_name]
 
-        return R_new
+        return Rscores
 
     """
     helper functions
