@@ -1,3 +1,4 @@
+import time
 import matplotlib.pyplot as plt
 import matplotlib
 import torch_geometric
@@ -230,13 +231,17 @@ def prepare_data(dataframe, start=0, stop=-1):
     return data
 
 
+t0 = time.time()
 print('Loading the h5 file...')
 # dataframe = pd.read_hdf("../data/toptagging/train.h5", key='table')
 dataframe = pd.read_hdf("/xai4hepvol/toptagging/train.h5", key='table')
+print(f'{round((time.time()-t0)/60,3)}min')
 
+t0 = time.time()
 print('Building the dataloader...')
 data = prepare_data(dataframe, start=0, stop=-1)
 loader = DataLoader(data, batch_size=2, shuffle=True)
+print(f'{round((time.time()-t0)/60,3)}min')
 
 num_features = 7
 model = ParticleNet(node_feat_size=num_features, num_classes=1)
