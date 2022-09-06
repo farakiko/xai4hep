@@ -1,3 +1,10 @@
+import matplotlib.pyplot as plt
+import matplotlib
+import torch_geometric
+from torch_geometric.loader import DataListLoader, DataLoader
+from jetnet.datasets import JetNet, TopTagging
+import pandas as pd
+import h5py
 from torch_geometric.typing import Adj, OptTensor, PairOptTensor, PairTensor
 from typing import Callable, Optional, Union
 from torch_geometric.data import Data, DataListLoader, Batch
@@ -38,7 +45,7 @@ class EdgeConv_lrp(MessagePassing):
     2. retrieve edge_activations
     """
 
-    def __init__(self, nn: Callable, aggr: str = 'max', **kwargs):
+    def __init__(self, nn: Callable, aggr: str = "max", **kwargs):
         super().__init__(aggr=aggr, **kwargs)
         self.nn = nn
 
@@ -56,7 +63,7 @@ class EdgeConv_lrp(MessagePassing):
         return self.nn(torch.cat([x_i, x_j], dim=-1))
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}(nn={self.nn})'
+        return f"{self.__class__.__name__}(nn={self.nn})"
 
 
 class EdgeConvBlock(nn.Module):
@@ -89,7 +96,7 @@ class ParticleNet(nn.Module):
         self.k = k
         self.num_edge_conv_blocks = 3
         self.kernel_sizes = [self.node_feat_size, 64, 128, 256]
-        self.input_sizes = np.cumsum(self.kernel_sizes)     # [4, 4+64, 4+64+128, 4+64+128+256]
+        self.input_sizes = np.cumsum(self.kernel_sizes)  # [4, 4+64, 4+64+128, 4+64+128+256]
         self.fc_size = 256
         # self.dropout = 0.1
         # self.dropout_layer = nn.Dropout(p=self.dropout)
@@ -113,17 +120,13 @@ class ParticleNet(nn.Module):
         for i in range(self.num_edge_conv_blocks):
 
             # using only angular coords for knn in first edgeconv block
-            edge_index[f'edge_conv_{i}'] = (
-                knn_graph(x[:, :2], self.k, batch) if i == 0 else knn_graph(x, self.k, batch)
-            )
+            edge_index[f"edge_conv_{i}"] = knn_graph(x[:, :2], self.k, batch) if i == 0 else knn_graph(x, self.k, batch)
 
-            out, edge_activations[f'edge_conv_{i}'] = self.edge_conv_blocks[i](x, edge_index[f'edge_conv_{i}'])
+            out, edge_activations[f"edge_conv_{i}"] = self.edge_conv_blocks[i](x, edge_index[f"edge_conv_{i}"])
 
-            x = torch.cat(
-                (out, x), dim=1
-            )  # concatenating with latent features i.e. skip connections per EdgeConvBlock
+            x = torch.cat((out, x), dim=1)  # concatenating with latent features i.e. skip connections per EdgeConvBlock
 
-            edge_block_activations[f'edge_conv_{i}'] = x
+            edge_block_activations[f"edge_conv_{i}"] = x
 
         x = global_mean_pool(x, batch)
 
@@ -131,30 +134,176 @@ class ParticleNet(nn.Module):
         # x = self.dropout_layer(F.relu(x))
         x = self.fc2(x)
 
-        return x, edge_activations, edge_block_activations, edge_index  # no softmax because pytorch cross entropy loss includes softmax
+        # no softmax because pytorch cross entropy loss includes softmax
+        return x, edge_activations, edge_block_activations, edge_index
 
 
-# # test to instantiate a model and run a forward pass and save the model
-# device = 'cpu'
-#
+def prepare_data(dataframe, start=0, stop=-1):
+    """
+    Transforming the input variables and returning only the following 7 features per particle
+        1. ∆η difference in pseudorapidity between the particle and the jet axis
+        2. ∆φ difference in azimuthal angle between the particle and the jet axis
+        3. log pT logarithm of the particle’s pT
+        4. log E logarithm of the particle’s energy
+        5. log pT/pT_jet logarithm of the particle’s pT relative to the jet pT
+        6. log E/E_jet logarithm of the particle’s energy relative to the jet energy
+        7. ∆R
+
+    Returns
+        a list of Data() objects with x~(num_particles,7) and y~(label)
+    """
+
+    # https://github.com/jet-universe/particle_transformer/blob/main/utils/convert_top_datasets.py
+    import os
+    import pandas as pd
+    import numpy as np
+    import awkward0
+    from uproot3_methods import TLorentzVectorArray
+    import awkward as ak
+
+    df = dataframe.iloc[start:stop]
+
+    def _col_list(prefix, max_particles=200):
+        return ['%s_%d' % (prefix, i) for i in range(max_particles)]
+
+    _px = df[_col_list('PX')].values
+    _py = df[_col_list('PY')].values
+    _pz = df[_col_list('PZ')].values
+    _e = df[_col_list('E')].values
+
+    mask = _e > 0
+    n_particles = np.sum(mask, axis=1)
+
+    px = awkward0.JaggedArray.fromcounts(n_particles, _px[mask])
+    py = awkward0.JaggedArray.fromcounts(n_particles, _py[mask])
+    pz = awkward0.JaggedArray.fromcounts(n_particles, _pz[mask])
+    energy = awkward0.JaggedArray.fromcounts(n_particles, _e[mask])
+
+    p4 = TLorentzVectorArray.from_cartesian(px, py, pz, energy)
+
+    jet_p4 = p4.sum()
+
+    # outputs
+    v = {}
+    v['label'] = df['is_signal_new'].values
+
+    v['jet_pt'] = jet_p4.pt
+    v['jet_eta'] = jet_p4.eta
+    v['jet_phi'] = jet_p4.phi
+    v['jet_energy'] = jet_p4.energy
+    v['jet_mass'] = jet_p4.mass
+    v['jet_nparticles'] = n_particles
+
+    v['part_px'] = px
+    v['part_py'] = py
+    v['part_pz'] = pz
+    v['part_energy'] = energy
+
+    _jet_etasign = np.sign(v['jet_eta'])
+    _jet_etasign[_jet_etasign == 0] = 1
+    v['part_deta'] = (p4.eta - v['jet_eta']) * _jet_etasign
+    v['part_dphi'] = p4.delta_phi(jet_p4)
+
+    # https://github.com/jet-universe/particle_transformer/blob/main/data/TopLandscape/top_kin.yaml
+    part_pt = np.hypot(v['part_px'], v['part_py'])
+    part_pt_log = np.log(part_pt)
+    part_e_log = np.log(v['part_energy'])
+    part_logptrel = np.log(part_pt / v['jet_pt'])
+    part_logerel = np.log(v['part_energy'] / v['jet_energy'])
+    part_deltaR = np.hypot(v['part_deta'], v['part_dphi'])
+
+    data = []
+
+    # for jet_index in range(len(df - 1)):
+    for jet_index in range(1000):
+
+        data.append(
+            Data(x=torch.cat([torch.from_numpy(v['part_deta'][jet_index].reshape(-1, 1)),
+                              torch.from_numpy(v['part_dphi'][jet_index].reshape(-1, 1)),
+                              torch.from_numpy(part_pt_log[jet_index].reshape(-1, 1)),
+                              torch.from_numpy(part_e_log[jet_index].reshape(-1, 1)),
+                              torch.from_numpy(part_logptrel[jet_index].reshape(-1, 1)),
+                              torch.from_numpy(part_logerel[jet_index].reshape(-1, 1)),
+                              torch.from_numpy(part_deltaR[jet_index].reshape(-1, 1))], axis=1),
+                 y=torch.tensor(v['label'][jet_index]).long()))
+
+    return data
+
+
+print('Loading the h5 file...')
+# dataframe = pd.read_hdf("../data/toptagging/train.h5", key='table')
+dataframe = pd.read_hdf("/xai4hepvol/toptagging/train.h5", key='table')
+
+print('Building the dataloader...')
+data = prepare_data(dataframe, start=0, stop=-1)
+loader = DataLoader(data, batch_size=2, shuffle=True)
+
+num_features = 7
+model = ParticleNet(node_feat_size=num_features, num_classes=1)
+
+criterion = nn.BCELoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+sig = nn.Sigmoid()
+
+losses_tot = []
+for epoch in range(100):
+    losses = []
+    for batch in loader:
+
+        preds, _, _, _ = model(batch)
+
+        loss = criterion(sig(preds), batch.y.reshape(-1, 1).float())
+
+        # backprop
+        optimizer.zero_grad()  # To avoid accumulating the gradients
+        loss.backward()
+        optimizer.step()
+
+        losses.append(loss.to('cpu').detach().numpy())
+
+    losses_tot.append(sum(losses) / len(losses))
+
+    fig, ax = plt.subplots()
+    ax.plot(range(len(losses_tot)), losses_tot, label='train loss')
+    ax.set_xlabel('Epochs')
+    ax.set_ylabel('Classifier loss')
+    ax.legend(loc='best')
+    plt.show()
+    plt.save_fig(f'/xai4hep/loss_epoch_{epoch}')
+
+    try:
+        state_dict = model.module.state_dict()
+    except AttributeError:
+        state_dict = model.state_dict()
+    torch.save(state_dict, f'/xai4hep/model_epoch_{epoch}.pth')
+
 # # get sample dataset
-# dataset = jetnet.datasets.JetNet(jet_type='g')
+# dataset = jetnet.datasets.JetNet(jet_type="g")
 #
 # # load the dataset in a convenient pyg format
 # dataset_pyg = []
-# for data in dataset:
-#     d = Data(x=data[0], y=data[1])
+# for aa in dataset:
+#     x = aa[0][aa[0][:, 3] == 0.5][:, :3]  # skip the mask
+#     d = Data(x=x, y=data[1])
 #     dataset_pyg.append(d)
 #
-# loader = DataLoader(dataset_pyg, batch_size=1, shuffle=False)
+# len(dataset_pyg)
+# loader = DataLoader(dataset_pyg, batch_size=3, shuffle=False)
 #
-# for batch in loader:
+# for i, batch in enumerate(loader):
 #     break
 #
-# model = ParticleNet(node_feat_size=4)
+# batch
 #
-# try:
-#     state_dict = model.module.state_dict()
-# except AttributeError:
-#     state_dict = model.state_dict()
-# torch.save(state_dict, f'../state_dict.pth')
+#
+# model = ParticleNet(node_feat_size=3)
+#
+# # try:
+# #     state_dict = model.module.state_dict()
+# # except AttributeError:
+# #     state_dict = model.state_dict()
+# # torch.save(state_dict, f'../state_dict.pth')
+#
+#
+# _, _, _, edge_index = model(batch)
+# edge_index["edge_conv_0"]

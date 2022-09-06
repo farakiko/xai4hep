@@ -47,31 +47,42 @@ parser.add_argument("--size",           type=int,           default=0,      help
 args = parser.parse_args()
 
 
-# get sample dataset
+# get sample dataset https://jetnet.readthedocs.io/en/latest/   # what's called hls4ml
+"""
+jets here are 1TeV
+in the ParticleNet top paper has jets smaller (and delphes)
+
+cons: 30 particles is a simplification (can go up to 150)
+"""
 print('Fetching the data..')
-dataset_gluon = jetnet.datasets.JetNet(jet_type='g')
-dataset_top = jetnet.datasets.JetNet(jet_type='t')
-dataset_q = jetnet.datasets.JetNet(jet_type='q')
+dataset_top = jetnet.datasets.JetNet(jet_type='t')  # y=1
+
+dataset_gluon = jetnet.datasets.JetNet(jet_type='g')    # y=0
+dataset_q = jetnet.datasets.JetNet(jet_type='q')    # y=0
 
 # load the dataset in a convenient pyg format
 dataset_pyg = []
 for data in dataset_gluon:
-    d = Data(x=data[0], y=data[1])
-    dataset_pyg.append(d)
+    d_gluon = Data(x=data[0], y=data[1])
+    dataset_pyg.append(d_gluon)
 
 for data in dataset_top:
-    d = Data(x=data[0], y=data[1])
-    dataset_pyg.append(d)
+    d_top = Data(x=data[0], y=data[1])
+    dataset_pyg.append(d_top)
 
 for data in dataset_q:
-    d = Data(x=data[0], y=data[1])
-    dataset_pyg.append(d)
+    d_q = Data(x=data[0], y=data[1])
+    dataset_pyg.append(d_q)
 
 
 random.shuffle(dataset_pyg)
 
 
-dataset_pyg[1700].y
+d_gluon.y
+d_top.y
+d_q.y
+
+
 loader = DataLoader(dataset_pyg, batch_size=1, shuffle=False)
 
 # load a pretrained model and update the outpath

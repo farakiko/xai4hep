@@ -96,6 +96,15 @@ if __name__ == "__main__":
             lrp = LRP_ParticleNet(device='cpu', model=model, epsilon=1e-8)
             Rscores, R_edges, edge_index = lrp.explain(batch, neuron_to_explain=0)
 
+            with open('binder/batch_x.pkl', 'wb') as handle:
+                pkl.dump(batch.x, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            with open('binder/Rscores.pkl', 'wb') as handle:
+                pkl.dump(Rscores, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            with open('binder/R_edges.pkl', 'wb') as handle:
+                pkl.dump(R_edges, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            with open('binder/edge_index.pkl', 'wb') as handle:
+                pkl.dump(edge_index, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
             Rscores_list.append(Rscores)
             R_edges_list.append(R_edges)
             edge_index_list.append(edge_index)
