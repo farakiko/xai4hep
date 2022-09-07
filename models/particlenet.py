@@ -273,14 +273,16 @@ for epoch in range(100):
     ax.set_xlabel('Epochs')
     ax.set_ylabel('Classifier loss')
     ax.legend(loc='best')
-    plt.show()
-    plt.save_fig(f'/xai4hep/loss_epoch_{epoch}')
+    # plt.show()
+    plt.savefig(f'/xai4hep/loss_epoch_{epoch}')
+    # plt.savefig(f'./loss_epoch_{epoch}')
 
     try:
         state_dict = model.module.state_dict()
     except AttributeError:
         state_dict = model.state_dict()
     torch.save(state_dict, f'/xai4hep/model_epoch_{epoch}.pth')
+    # torch.save(state_dict, f'./model_epoch_{epoch}.pth')
 
 # # get sample dataset
 # dataset = jetnet.datasets.JetNet(jet_type="g")
