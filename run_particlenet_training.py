@@ -59,8 +59,6 @@ parser.add_argument("--outpath", type=str, default="./experiments/", help="outpu
 parser.add_argument("--model_prefix", type=str, default="ParticleNet_model", help="directory to hold the model and plots")
 parser.add_argument("--dataset", type=str, default="./data/toptagging/", help="dataset path")
 parser.add_argument("--overwrite", dest="overwrite", action="store_true", help="Overwrites the model if True")
-parser.add_argument("--load", dest="load", action="store_true", help="Load the model (no training)")
-parser.add_argument("--load_epoch", type=int, default=-1, help="Which epoch of the model to load for evaluation")
 parser.add_argument("--n_epochs", type=int, default=3, help="number of training epochs")
 parser.add_argument("--batch_size", type=int, default=100)
 parser.add_argument("--patience", type=int, default=30, help="patience before early stopping")
@@ -170,40 +168,6 @@ def train_ddp(rank, world_size, args, data_train, data_valid, model, num_classes
     cleanup()
 
 
-def inference_ddp(rank, world_size, args, dataset, model, num_classes, PATH):
-    """
-    An inference_ddp() function that will be passed as a demo_fn to run_demo()
-    to perform inference over multiple gpus using DDP.
-
-    It divides and distributes the testing dataset appropriately, copies the model,
-    and wraps the model with DDP on each device.
-    """
-
-    setup(rank, world_size)
-
-    print(f"Running inference on rank {rank}: {torch.cuda.get_device_name(rank)}")
-
-    # give each gpu a subset of the data
-    hyper_test = int(args.n_test / world_size)
-
-    test_dataset = torch.utils.data.Subset(dataset, np.arange(start=rank * hyper_test, stop=(rank + 1) * hyper_test))
-
-    # construct data loaders
-    file_loader_test = make_file_loaders(
-        world_size, test_dataset, num_workers=args.num_workers, prefetch_factor=args.prefetch_factor
-    )
-
-    # copy the model to the GPU with id=rank
-    print(f"Copying the model on rank {rank}..")
-    model = model.to(rank)
-    model.eval()
-    ddp_model = DDP(model, device_ids=[rank])
-
-    make_predictions(rank, ddp_model, file_loader_test, args.batch_size, num_classes, PATH)
-
-    cleanup()
-
-
 def train(device, world_size, args, data_train, data_valid, model, num_classes, outpath):
     """
     A train() function that will load the training dataset and start a training_loop
@@ -240,32 +204,6 @@ def train(device, world_size, args, data_train, data_valid, model, num_classes, 
     )
 
 
-def inference(device, world_size, args, dataset, model, num_classes, PATH):
-    """
-    An inference() function that will load the testing dataset and start running inference
-    on a single device (cuda or cpu).
-    """
-
-    if device == "cpu":
-        print("Running inference on cpu")
-    else:
-        print(f"Running inference on: {torch.cuda.get_device_name(device)}")
-        device = device.index
-
-    test_dataset = torch.utils.data.Subset(dataset, np.arange(start=0, stop=args.n_test))
-
-    # construct data loaders
-    file_loader_test = make_file_loaders(
-        world_size, test_dataset, num_workers=args.num_workers, prefetch_factor=args.prefetch_factor
-    )
-
-    # copy the model to the GPU with id=rank
-    model = model.to(device)
-    model.eval()
-
-    make_predictions(device, model, file_loader_test, args.batch_size, num_classes, PATH)
-
-
 if __name__ == "__main__":
 
     world_size = torch.cuda.device_count()
@@ -278,87 +216,36 @@ if __name__ == "__main__":
 
     outpath = osp.join(args.outpath, args.model_prefix)
 
-    # load a pre-trained specified model, otherwise, instantiate and train a new model
-    if args.load:
-        state_dict, model_kwargs, outpath = load_model(device, outpath, args.model_prefix, args.load_epoch)
+    model_kwargs = {
+        "node_feat_size": num_features,
+        "num_classes": num_classes,
+        "k": args.nearest,
+    }
 
-        model = ParticleNet(**model_kwargs)
-        model.load_state_dict(state_dict)
+    model = ParticleNet(**model_kwargs)
 
+    # save model_kwargs and hyperparameters
+    save_model(args, args.model_prefix, outpath, model_kwargs)
+
+    print(model)
+    print(args.model_prefix)
+
+    print("Training over {} epochs".format(args.n_epochs))
+
+    # run the training using DDP if more than one gpu is available
+    print('Loading training datafiles...')
+    data_train = []
+    for i in range(2):
+        data_train = data_train + torch.load(f"{args.dataset}/train/processed/data_{i}.pt")
+        print(f"- loaded file {i} for train")
+
+    print('Loading validation datafiles...')
+    data_valid = []
+    for i in range(1):
+        data_valid = data_valid + torch.load(f"{args.dataset}/val/processed/data_{i}.pt")
+        print(f"- loaded file {i} for valid")
+
+    if world_size >= 2:
+        run_demo(train_ddp, world_size, args, data_train, data_valid, model, num_classes, outpath)
     else:
-        model_kwargs = {
-            "node_feat_size": num_features,
-            "num_classes": num_classes,
-            "k": args.nearest,
-        }
-
-        model = ParticleNet(**model_kwargs)
-
-        # save model_kwargs and hyperparameters
-        save_model(args, args.model_prefix, outpath, model_kwargs)
-
-        print(model)
-        print(args.model_prefix)
-
-        print("Training over {} epochs".format(args.n_epochs))
-
-        # run the training using DDP if more than one gpu is available
-        print('Loading training datafiles...')
-        data_train = []
-        for i in range(12):
-            data_train = data_train + torch.load(f"{args.dataset}/train/processed/data_{i}.pt")
-            print(f"- loaded file {i} for train")
-
-        print('Loading validation datafiles...')
-        data_valid = []
-        for i in range(4):
-            data_valid = data_valid + torch.load(f"{args.dataset}/val/processed/data_{i}.pt")
-            print(f"- loaded file {i} for valid")
-
-        if world_size >= 2:
-            run_demo(train_ddp, world_size, args, data_train, data_valid, model, num_classes, outpath)
-        else:
-            train(device, world_size, args, data_train, data_valid, model, num_classes, outpath)
-
-        # load the best epoch state
-        state_dict = torch.load(outpath + "/best_epoch_weights.pth", map_location=device)
-        model.load_state_dict(state_dict)
-
-    # # specify which epoch/state to load to run the inference and make plots
-    # if args.load and args.load_epoch != -1:
-    #     epoch_to_load = args.load_epoch
-    # else:
-    #     epoch_to_load = json.load(open(f"{outpath}/best_epoch.json"))["best_epoch"]
-    #
-    # PATH = f"{outpath}/testing_epoch_{epoch_to_load}_{args.sample}/"
-    # pred_path = f"{PATH}/predictions/"
-    # plot_path = f"{PATH}/plots/"
-    #
-    # # run the inference
-    # if args.make_predictions:
-    #
-    #     if not os.path.exists(PATH):
-    #         os.makedirs(PATH)
-    #     if not os.path.exists(f"{PATH}/predictions/"):
-    #         os.makedirs(f"{PATH}/predictions/")
-    #     if not os.path.exists(f"{PATH}/plots/"):
-    #         os.makedirs(f"{PATH}/plots/")
-    #
-    #     # run the inference using DDP if more than one gpu is available
-    #     dataset_test = PFGraphDataset(args.dataset_test, args.data)
-    #
-    #     if world_size >= 2:
-    #         run_demo(inference_ddp, world_size, args, dataset_test, model, num_classes, PATH)
-    #     else:
-    #         inference(device, world_size, args, dataset_test, model, num_classes, PATH)
-    #
-    #     postprocess_predictions(pred_path)
-    #
-    # # load the predictions and make plots (must have ran make_predictions before)
-    # if args.make_plots:
-    #
-    #     if not osp.isdir(plot_path):
-    #         os.makedirs(plot_path)
-    #
-    #     if args.data == "cms":
-    #         make_plots_cms(pred_path, plot_path, args.sample)
+        train(device, world_size, args, data_train, data_valid, model, num_classes, outpath)

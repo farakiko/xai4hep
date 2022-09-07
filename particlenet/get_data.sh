@@ -33,6 +33,6 @@ cd ../
 
 # process the datasets
 cd ../../particlenet/
-python TopTaggingDataset.py --dataset ../data/toptagging/ --mode train
-python TopTaggingDataset.py --dataset ../data/toptagging/ --mode val
-python TopTaggingDataset.py --dataset ../data/toptagging/ --mode test
+python dataset.py --dataset ../data/toptagging/ --mode train
+python dataset.py --dataset ../data/toptagging/ --mode val
+python dataset.py --dataset ../data/toptagging/ --mode test

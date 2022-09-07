@@ -177,8 +177,8 @@ def parse_args():
 if __name__ == "__main__":
 
     """
-    To process train data: python TopTaggingDataset.py --dataset ../data/toptagging/ --mode train
-    To process val data:  python TopTaggingDataset.py --dataset ../data/toptagging/ --mode val
+    To process train data: python dataset.py --dataset ../data/toptagging/ --mode train
+    To process val data:  python dataset.py --dataset ../data/toptagging/ --mode val
     """
 
     args = parse_args()
