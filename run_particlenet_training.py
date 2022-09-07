@@ -61,9 +61,8 @@ parser.add_argument("--dataset", type=str, default="./data/toptagging/", help="d
 parser.add_argument("--overwrite", dest="overwrite", action="store_true", help="Overwrites the model if True")
 parser.add_argument("--n_epochs", type=int, default=3, help="number of training epochs")
 parser.add_argument("--batch_size", type=int, default=100)
-parser.add_argument("--patience", type=int, default=30, help="patience before early stopping")
+parser.add_argument("--patience", type=int, default=10, help="patience before early stopping")
 parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
-parser.add_argument("--num_convs", type=int, default=3, help="number of graph convolutions")
 parser.add_argument("--nearest", type=int, default=4, help="k nearest neighbors in gravnet layer")
 parser.add_argument("--make_predictions", dest="make_predictions",
                     action="store_true", help="run inference on the test data")
@@ -98,7 +97,7 @@ def cleanup():
     dist.destroy_process_group()
 
 
-def run_demo(demo_fn, world_size, args, dataset, model, num_classes, outpath):
+def run_demo(demo_fn, world_size, args, data_train, data_valid, model, num_classes, outpath):
     """
     Necessary function that spawns a process group of size=world_size processes to run demo_fn()
     on each gpu device that will be indexed by 'rank'.
@@ -113,7 +112,7 @@ def run_demo(demo_fn, world_size, args, dataset, model, num_classes, outpath):
 
     mp.spawn(
         demo_fn,
-        args=(world_size, args, dataset, model, num_classes, outpath),
+        args=(world_size, args, data_train, data_valid, model, num_classes, outpath),
         nprocs=world_size,
         join=True,
     )
