@@ -1,3 +1,7 @@
+from torch_geometric.data.data import BaseData
+from torch_geometric.data import Batch
+from collections.abc import Sequence
+from torch_geometric.data import Data, Dataset
 import time
 import matplotlib.pyplot as plt
 import matplotlib
@@ -214,9 +218,8 @@ def prepare_data(dataframe, start=0, stop=-1):
     part_deltaR = np.hypot(v['part_deta'], v['part_dphi'])
 
     data = []
-
-    # for jet_index in range(len(df - 1)):
-    for jet_index in range(1000):
+    c = 0
+    for jet_index in range(len(df - 1)):
 
         data.append(
             Data(x=torch.cat([torch.from_numpy(v['part_deta'][jet_index].reshape(-1, 1)),
@@ -227,8 +230,99 @@ def prepare_data(dataframe, start=0, stop=-1):
                               torch.from_numpy(part_logerel[jet_index].reshape(-1, 1)),
                               torch.from_numpy(part_deltaR[jet_index].reshape(-1, 1))], axis=1),
                  y=torch.tensor(v['label'][jet_index]).long()))
+        if jet_index % 100000 == 0 and jet_index != 0:
+            torch.save(data, f'../data/toptagging/processed/data_{c}.pt')
+            c += 1
+            data = []
 
     return data
+
+
+len(dataframe) / 10
+
+
+len(data)
+
+
+for i in range(1000):
+    if i % 100 == 0:
+        print(i)
+
+torch.save(data, 'lol.pt')
+
+
+class Collater:
+    """
+    This function was copied from torch_geometric.loader.Dataloader() source code.
+    Edits were made such that the function can collate samples as a list of tuples
+    of Data() objects instead of Batch() objects. This is needed becase pyg Dataloaders
+    do not handle num_workers>0 since Batch() objects cannot be directly serialized using pkl.
+    """
+
+    def __init__(self):
+        pass
+
+    def __call__(self, batch):
+        elem = batch[0]
+        if isinstance(elem, BaseData):
+            return batch
+
+        elif isinstance(elem, Sequence) and not isinstance(elem, str):
+            return [self(s) for s in zip(*batch)]
+
+        raise TypeError(f"DataLoader found invalid type: {type(elem)}")
+
+
+a = TopTaggingDataset('../data/toptagging/')
+
+len(a)
+
+file_loader = torch.utils.data.DataLoader(a,
+                                          collate_fn=Collater(),
+                                          pin_memory=True,)
+
+for file in file_loader:
+    break
+file
+
+dd = DataLoader(file, batch_size=4)
+for point in dd:
+    break
+
+point
+
+
+class TopTaggingDataset(Dataset):
+    """
+    Initialize parameters of graph dataset
+    Args:
+        root (str): path
+    """
+
+    def __init__(self, root, transform=None, pre_transform=None):
+        super(TopTaggingDataset, self).__init__(root, transform, pre_transform)
+        print(root)
+        # self._processed_dir = Dataset.processed_dir.fget(self)
+
+    # @property
+    # def processed_dir(self):
+    #     return self._processed_dir
+    #
+    # @property
+    # def processed_file_names(self):
+    #     proc_list = glob(osp.join(self.processed_dir, "*.pt"))
+    #     return sorted([processed_path.replace(self.processed_dir, ".") for processed_path in proc_list])
+
+    def __len__(self):
+        proc_list = glob(osp.join(self.processed_dir, "*.pt"))
+        return len(sorted([processed_path.replace(self.processed_dir, ".") for processed_path in proc_list]))
+
+    def get(self, idx):
+        data = torch.load(osp.join(self.processed_dir, "data_{}.pt".format(idx)), map_location="cpu")
+        return data
+
+    def __getitem__(self, idx):
+        return self.get(idx)
 
 
 t0 = time.time()

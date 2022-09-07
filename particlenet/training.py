@@ -1,3 +1,5 @@
+import sklearn.metrics
+import sklearn
 from torch_geometric.data import Data, Dataset
 import time
 import matplotlib.pyplot as plt
@@ -37,11 +39,9 @@ import os
 import time
 
 import matplotlib
-import numpy as np
-import sklearn
-import sklearn.metrics
-import torch
-import torch_geometric
+import mplhep as hep
+plt.style.use(hep.style.CMS)
+plt.rcParams.update({'font.size': 20})
 
 matplotlib.use("Agg")
 
@@ -50,10 +50,10 @@ np.seterr(divide="ignore", invalid="ignore")
 
 
 @torch.no_grad()
-def validation_run(rank, model, train_loader, valid_loader, batch_size, alpha, target_type, num_classes, outpath):
+def validation_run(rank, model, train_loader, valid_loader, batch_size, num_classes, outpath):
     with torch.no_grad():
         optimizer = None
-        ret = train(rank, model, train_loader, valid_loader, batch_size, optimizer, alpha, target_type, num_classes, outpath)
+        ret = train(rank, model, train_loader, valid_loader, batch_size, optimizer, num_classes, outpath)
     return ret
 
 
@@ -103,8 +103,8 @@ def train(rank, model, train_loader, valid_loader, batch_size, optimizer, num_cl
 
         losses = losses + loss.detach()
 
-    #     if i == 2:
-    #         break
+        if i == 2:
+            break
 
     print(f"Average inference time per batch on rank {rank} is {round((t / len(loader)), 3)}s")
 
@@ -132,15 +132,11 @@ def training_loop(
 
     Args:
         rank: int representing the gpu device id, or str=='cpu' (both work, trust me)
-        data: data sepecification ('cms' or 'delphes')
         model: a pytorch model wrapped by DistributedDataParallel (DDP)
-        dataset: a PFGraphDataset object
         train_loader: a pytorch Dataloader that loads .pt files for training when you invoke the get() method
         valid_loader: a pytorch Dataloader that loads .pt files for validation when you invoke the get() method
         patience: number of stale epochs allowed before stopping the training
         optimizer: optimizer to use for training (by default: Adam)
-        alpha: the hyperparameter controlling the classification vs regression task balance
-        target: 'gen' or 'cand' training
         num_classes: number of particle candidate classes to predict (6 for delphes, 9 for cms)
         outpath: path to store the model weights and training plots
     """
@@ -221,17 +217,18 @@ def training_loop(
 
         # make loss plots
         fig, ax = plt.subplots()
-        ax.plot(range(len(losses_train)), losses_train, label=training)
-        ax.plot(range(len(losses_valid)), losses_valid, label=validation)
+        ax.plot(range(len(losses_train)), losses_train, label="training")
+        ax.plot(range(len(losses_valid)), losses_valid, label="validation")
         ax.set_xlabel("Epochs")
         ax.set_ylabel("Loss")
         ax.legend(loc="best")
-        ax.set_title("Loss", fontsize=20)
         plt.savefig(f"{outpath}/training_plots/losses/loss_{epoch}.pdf")
         plt.close(fig)
 
-        with open(f"{outpath}/training_plots/losses/loss_{epoch}.pkl", "wb") as f:
-            pkl.dump(var, f)
+        with open(f"{outpath}/training_plots/losses/loss_{epoch}_train.pkl", "wb") as f:
+            pkl.dump(losses_train, f)
+        with open(f"{outpath}/training_plots/losses/loss_{epoch}_valid.pkl", "wb") as f:
+            pkl.dump(losses_valid, f)
 
         print("----------------------------------------------------------")
     print(f"Done with training. Total training time on rank {rank} is {round((time.time() - t0_initial)/60,3)}min")
