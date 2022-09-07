@@ -250,8 +250,11 @@ criterion = nn.BCELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 sig = nn.Sigmoid()
 
+print('Initiating the training...')
 losses_tot = []
 for epoch in range(100):
+    t0 = time.time()
+
     losses = []
     for batch in loader:
 
@@ -283,6 +286,8 @@ for epoch in range(100):
         state_dict = model.state_dict()
     torch.save(state_dict, f'/xai4hep/model_epoch_{epoch}.pth')
     # torch.save(state_dict, f'./model_epoch_{epoch}.pth')
+
+    print(f'Epoch {epoch}: {round((time.time()-t0)/60,3)}min per epoch, avg_loss={losses_tot[epoch]}')
 
 # # get sample dataset
 # dataset = jetnet.datasets.JetNet(jet_type="g")
