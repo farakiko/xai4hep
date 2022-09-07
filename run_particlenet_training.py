@@ -234,13 +234,13 @@ if __name__ == "__main__":
     # run the training using DDP if more than one gpu is available
     print('Loading training datafiles...')
     data_train = []
-    for i in range(2):
+    for i in range(12):
         data_train = data_train + torch.load(f"{args.dataset}/train/processed/data_{i}.pt")
         print(f"- loaded file {i} for train")
 
     print('Loading validation datafiles...')
     data_valid = []
-    for i in range(1):
+    for i in range(4):
         data_valid = data_valid + torch.load(f"{args.dataset}/val/processed/data_{i}.pt")
         print(f"- loaded file {i} for valid")
 

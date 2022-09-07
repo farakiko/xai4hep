@@ -103,8 +103,8 @@ def train(rank, model, train_loader, valid_loader, batch_size, optimizer, num_cl
 
         losses = losses + loss.detach()
 
-        if i == 2:
-            break
+        # if i == 2:
+        #     break
 
     print(f"Average inference time per batch on rank {rank} is {round((t / len(loader)), 3)}s")
 
