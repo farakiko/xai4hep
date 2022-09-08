@@ -28,8 +28,10 @@ from plot_utils import make_Rmaps
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--loader",         type=str,           default='junk/test_loader.pth',   help="path to a saved pytorch DataLoader")
-parser.add_argument("--outpath",        type=str,           default='./experiments/',  help="path to the trained model directory")
+parser.add_argument("--loader",         type=str,           default='junk/test_loader.pth',
+                    help="path to a saved pytorch DataLoader")
+parser.add_argument("--outpath",        type=str,           default='./experiments/',
+                    help="path to the trained model directory")
 parser.add_argument("--load_model",     type=str,           default="",     help="Which model to load")
 parser.add_argument("--load_epoch",     type=int,           default=0,      help="Which epoch of the model to load")
 parser.add_argument("--out_neuron",     type=int,           default=0,      help="the output neuron you wish to explain")
@@ -65,10 +67,10 @@ def load_model(device, outpath, model_directory, load_epoch):
 if __name__ == "__main__":
     """
     e.g. to run lrp and make Rmaps
-    python -u lrp_mlpf_pipeline.py --run_lrp --make_rmaps --load_model='MLPF_gen_ntrain_1_nepochs_1_clf_reg' --load_epoch=0 --outpath='/particleflowvol/test_tmp_delphes/experiments/' --loader='/particleflowvol/loader/test_loader.pth' --pid='chhadron' --size=400
+    python -u run_lrp_mlpf.py --run_lrp --make_rmaps --load_model='MLPF_gen_ntrain_1_nepochs_1_clf_reg' --load_epoch=0 --outpath='/particleflowvol/test_tmp_delphes/experiments/' --loader='/particleflowvol/loader/test_loader.pth' --pid='chhadron' --size=400
 
     e.g. to only make Rmaps
-    python -u lrp_mlpf_pipeline.py --make_rmaps --load_model='MLPF_gen_ntrain_1_nepochs_1_clf_reg' --load_epoch=0 --outpath='/particleflowvol/test_tmp_delphes/experiments/' --loader='/particleflowvol/loader/test_loader.pth' --pid='chhadron' --size=400
+    python -u run_lrp_mlpf.py --make_rmaps --load_model='MLPF_gen_ntrain_1_nepochs_1_clf_reg' --load_epoch=0 --outpath='/particleflowvol/test_tmp_delphes/experiments/' --loader='/particleflowvol/loader/test_loader.pth' --pid='chhadron' --size=400
     """
 
     if args.run_lrp:
@@ -140,4 +142,5 @@ if __name__ == "__main__":
             preds_list = pkl.load(f)
 
         print('Making Rmaps..')
-        make_Rmaps(args.outpath, Rtensors_list, inputs_list, preds_list, pid=args.pid, neighbors=3, out_neuron=args.out_neuron)
+        make_Rmaps(args.outpath, Rtensors_list, inputs_list, preds_list,
+                   pid=args.pid, neighbors=3, out_neuron=args.out_neuron)

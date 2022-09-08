@@ -55,8 +55,10 @@ def compute_Rscores(data_val, model, stop_at):
         break
 
     # initialize the Rscore tensors for Higgs & QCD jets
-    Rtensor_p_H, Rtensor_p_QCD = torch.zeros(input_p.shape[1], input_p.shape[2]), torch.zeros(input_p.shape[1], input_p.shape[2])
-    Rtensor_sv_H, Rtensor_sv_QCD = torch.zeros(input_sv.shape[1], input_sv.shape[2]), torch.zeros(input_sv.shape[1], input_sv.shape[2])
+    Rtensor_p_H, Rtensor_p_QCD = torch.zeros(
+        input_p.shape[1], input_p.shape[2]), torch.zeros(input_p.shape[1], input_p.shape[2])
+    Rtensor_sv_H, Rtensor_sv_QCD = torch.zeros(
+        input_sv.shape[1], input_sv.shape[2]), torch.zeros(input_sv.shape[1], input_sv.shape[2])
     correct_num_H, correct_num_QCD = 0, 0
     tot_num_H, tot_num_QCD = 0, 0
 
@@ -157,7 +159,7 @@ def plot_Rscores(Rtensor_p_H, Rtensor_sv_H, Rtensor_p_QCD, Rtensor_sv_QCD):
 if __name__ == "__main__":
     """
     e.g.
-    python3 interaction_net_pipeline.py
+    python3 run_lrp_interaction_net.py
     """
 
     # define the primary vertex features
