@@ -1,6 +1,6 @@
 import argparse
+from models import ParticleNet
 from particlenet import (
-    ParticleNet,
     TopTaggingDataset,
     make_file_loaders,
     save_model,

@@ -88,8 +88,15 @@ class LRP_ParticleNet():
         self.model.eval()
         preds, self.edge_activations, self.edge_block_activations, self.edge_index = self.model(input)
 
+        # detach gradients to speed-up quick LRP operations
+        for elem in [self.edge_activations, self.edge_block_activations, self.edge_index]:
+            for key, value in elem.items():
+                elem[key] = value.detach()
+
         # get the activations
-        self.activations = activations
+        self.activations = {}
+        for key, value in activations.items():
+            self.activations[key] = value.detach()
 
         # initialize the Rscores vector using the output predictions
         Rscores = preds[:, neuron_to_explain].reshape(-1, 1).detach()
@@ -111,7 +118,8 @@ class LRP_ParticleNet():
 
         # loop over EdgeConv blocks
         for idx in range(self.num_convs - 1, -1, -1):
-            Rscores, R_edges[f'edge_conv_{idx}'], skip_connection_Rscores = self.redistribute_EdgeConv(Rscores, idx, skip_connection_Rscores)
+            Rscores, R_edges[f'edge_conv_{idx}'], skip_connection_Rscores = self.redistribute_EdgeConv(
+                Rscores, idx, skip_connection_Rscores)
 
         return Rscores, R_edges, self.edge_index
 
@@ -193,10 +201,13 @@ class LRP_ParticleNet():
             # loop over neighbors
 
             for j in range(self.num_neighbors):
-                deno = self.edge_activations[f'edge_conv_{idx}'][(i * self.num_neighbors):(i * self.num_neighbors) + self.num_neighbors].sum(axis=0)  # summing the edge_activations node_i (i.e. the edge_activations of the neighboring nodes)
+                # summing the edge_activations node_i (i.e. the edge_activations of the neighboring nodes)
+                deno = self.edge_activations[f'edge_conv_{idx}'][(
+                    i * self.num_neighbors):(i * self.num_neighbors) + self.num_neighbors].sum(axis=0)
 
                 # redistribute the Rscores of node_i according to how activated each edge_activation was (normalized by deno)
-                R_new[(i * self.num_neighbors) + j] = R_old[i] * self.edge_activations[f'edge_conv_{idx}'][(i * self.num_neighbors) + j] / (deno + self.epsilon)
+                R_new[(i * self.num_neighbors) + j] = R_old[i] * \
+                    self.edge_activations[f'edge_conv_{idx}'][(i * self.num_neighbors) + j] / (deno + self.epsilon)
 
         return R_new
 
@@ -253,13 +264,13 @@ class LRP_ParticleNet():
             W = torch.transpose(W, 0, 1)    # sanity check of forward pass: (torch.matmul(x, W) + layer.bias) == layer(x)
 
             # (1) compute the denominator
-            denominator = torch.matmul(self.activations[name].detach(), W) + self.epsilon
+            denominator = torch.matmul(self.activations[name], W) + self.epsilon
 
             # (2) scale the Rscores
             scaledR = Rscores / denominator
 
             # (3) compute the new Rscores
-            Rscores = torch.matmul(scaledR, torch.transpose(W, 0, 1)) * self.activations[name].detach()
+            Rscores = torch.matmul(scaledR, torch.transpose(W, 0, 1)) * self.activations[name]
 
         return Rscores
 
