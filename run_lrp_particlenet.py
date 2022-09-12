@@ -86,7 +86,7 @@ if __name__ == "__main__":
         edge_index_list.append(edge_index)
 
         print('------------------------------------------------------')
-        if i == 10:
+        if i == 20:
             break
 
     # store the Rscores in the binder folder for further notebook plotting

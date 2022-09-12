@@ -83,7 +83,7 @@ def train(rank, model, train_loader, valid_loader, batch_size, optimizer, num_cl
     t0, tf = time.time(), 0
     t = 0
     for i, batch in enumerate(loader):
-        print(f"batch {i} / {len(loader)}")
+
         # run forward pass
         t0 = time.time()
         preds, _, _, _ = model(batch.to(rank))
