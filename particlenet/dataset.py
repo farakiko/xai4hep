@@ -1,3 +1,6 @@
+import awkward as ak
+from uproot3_methods import TLorentzVectorArray
+import awkward0
 from torch_geometric.data import Data, Dataset
 import time
 import matplotlib.pyplot as plt
@@ -185,3 +188,8 @@ if __name__ == "__main__":
 
     topdataset = TopTaggingDataset(root=args.dataset, mode=args.mode)
     topdataset.prepare_ptfiles()
+
+
+# ! ls .. / data / toptagging / test
+# df = pd.read_hdf(f"../data/toptagging/test/raw/test.h5", key='table')
+# df.keys
