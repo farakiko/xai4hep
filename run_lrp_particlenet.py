@@ -33,7 +33,7 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument("--outpath", type=str, default='./experiments/', help="path to the trained model directory")
 parser.add_argument("--model", type=str, default="ParticleNet_model", help="Which model to load")
-parser.add_argument("--data", type=str, default='./data/toptagging/test/processed/data_0.pt', help="path to datafile")
+parser.add_argument("--data", type=str, default='./data/toptagging/train/processed/data_0.pt', help="path to datafile")
 
 args = parser.parse_args()
 
@@ -70,8 +70,9 @@ if __name__ == "__main__":
     batch_x_list, batch_y_list, Rscores_list, R_edges_list, edge_index_list = [], [], [], [], []
 
     for i, batch in enumerate(loader):
-        print(f'Explaining jet # {i}')
+        # batch = Batch(x=batch2.x[:8], y=batch2.y[:8], batch=batch2.batch[:8])
 
+        print(f'Explaining jet # {i}')
         print(f'Testing lrp on: \n {batch}')
 
         # run lrp on sample model
@@ -86,7 +87,7 @@ if __name__ == "__main__":
         edge_index_list.append(edge_index)
 
         print('------------------------------------------------------')
-        if i == 20:
+        if i == 2000:
             break
 
     # store the Rscores in the binder folder for further notebook plotting

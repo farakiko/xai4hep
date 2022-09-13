@@ -136,8 +136,8 @@ def train_ddp(rank, world_size, args, data_train, data_valid, model, num_classes
     data_train = data_train[int(rank * (len(data_train) / world_size)):int((rank + 1) * (len(data_train) / world_size))]
     data_valid = data_valid[int(rank * (len(data_valid) / world_size)):int((rank + 1) * (len(data_valid) / world_size))]
 
-    train_loader = DataLoader(data_train, batch_size=args.batch_size)
-    valid_loader = DataLoader(data_valid, batch_size=args.batch_size)
+    train_loader = DataLoader(data_train, batch_size=args.batch_size, shuffle=True)
+    valid_loader = DataLoader(data_valid, batch_size=args.batch_size, shuffle=True)
 
     # give each gpu a subset of the data
     hyper_train = int(len(dataset_train) / world_size)
@@ -248,3 +248,79 @@ if __name__ == "__main__":
         run_demo(train_ddp, world_size, args, data_train, data_valid, model, num_classes, outpath)
     else:
         train(device, world_size, args, data_train, data_valid, model, num_classes, outpath)
+
+    # quick test
+    import time
+    import numpy as np
+    import pandas as pd
+    import hist as hist2
+    import matplotlib
+    import matplotlib.pyplot as plt
+    import matplotlib.colors as mcolors
+    import mplhep as hep
+
+    import pickle as pkl
+    import sys
+    import torch
+    import torch.nn as nn
+    from torch_geometric.loader import DataListLoader, DataLoader
+    from torch_geometric.data import Data, Batch
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from itertools import cycle
+
+    from sklearn import svm, datasets
+    from sklearn.metrics import roc_curve, auc
+    from sklearn.model_selection import train_test_split
+    from sklearn.preprocessing import label_binarize
+    from sklearn.multiclass import OneVsRestClassifier
+    from sklearn.metrics import roc_auc_score
+    %matplotlib inline
+
+    import mplhep as hep
+    plt.style.use(hep.style.CMS)
+    plt.rcParams.update({'font.size': 20})
+
+    for i in range(4):
+        data_test = data_test + torch.load(f"{args.dataset}/val/processed/data_{i}.pt")
+        print(f"- loaded file {i} for test")
+    loader = DataLoader(data_test, batch_size=args.batch_size, shuffle=True)
+
+    sig = nn.Sigmoid()
+
+    y_score = None
+    y_test = None
+    for i, batch in enumerate(loader):
+        preds, _, _, _ = model(batch)
+        preds = sig(preds).detach()
+
+        if y_score == None:
+            y_score = preds[:].reshape(-1)
+            y_test = batch.y
+        else:
+            y_score = torch.cat([y_score, preds[:].reshape(-1)])
+            y_test = torch.cat([y_test, batch.y])
+
+    # Compute ROC curve and ROC area for each class
+    fpr, tpr, _ = roc_curve(y_test, y_score)
+    roc_auc = auc(fpr, tpr)
+
+    fig, ax = plt.subplots()
+    ax.plot(
+        tpr,
+        fpr,
+        color="darkorange",
+        lw=2,
+        label=f"AUC = {round(auc(fpr, tpr)*100,2)}%",
+    )
+    plt.plot([0, 1], [0, 1], color="navy", lw=2, linestyle="--")
+    plt.xlim([0.0, 1.0])
+    # plt.ylim([0.0, 1])
+    plt.ylabel("False Positive Rate")
+    plt.xlabel("True Positive Rate")
+    plt.yscale('log')
+    # plt.title("")
+    plt.legend(loc="lower right")
+    plt.show()
+    plt.savefig(f"{args.outpath}/{args.model_prefix}/Roc_curve.pdf")
