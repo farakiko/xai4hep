@@ -276,7 +276,6 @@ if __name__ == "__main__":
     from sklearn.preprocessing import label_binarize
     from sklearn.multiclass import OneVsRestClassifier
     from sklearn.metrics import roc_auc_score
-    %matplotlib inline
 
     import mplhep as hep
     plt.style.use(hep.style.CMS)
@@ -322,5 +321,4 @@ if __name__ == "__main__":
     plt.yscale('log')
     # plt.title("")
     plt.legend(loc="lower right")
-    plt.show()
     plt.savefig(f"{args.outpath}/{args.model_prefix}/Roc_curve.pdf")
