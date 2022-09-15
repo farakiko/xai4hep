@@ -99,7 +99,7 @@ class ParticleNet(nn.Module):
         self.input_sizes = np.cumsum(self.kernel_sizes)  # [4, 4+64, 4+64+128, 4+64+128+256]
         self.fc_size = 256
         self.dropout = 0.1
-        # self.dropout_layer = nn.Dropout(p=self.dropout)
+        self.dropout_layer = nn.Dropout(p=self.dropout)
 
         # define the edgeconvblocks
         self.edge_conv_blocks = nn.ModuleList()
