@@ -98,7 +98,7 @@ class ParticleNet(nn.Module):
         self.kernel_sizes = [self.node_feat_size, 64, 128, 256]
         self.input_sizes = np.cumsum(self.kernel_sizes)  # [4, 4+64, 4+64+128, 4+64+128+256]
         self.fc_size = 256
-        # self.dropout = 0.1
+        self.dropout = 0.1
         # self.dropout_layer = nn.Dropout(p=self.dropout)
 
         # define the edgeconvblocks
@@ -131,7 +131,7 @@ class ParticleNet(nn.Module):
         x = global_mean_pool(x, batch)
 
         x = self.fc1(x)
-        # x = self.dropout_layer(F.relu(x))
+        x = self.dropout_layer(F.relu(x))
         x = self.fc2(x)
 
         # no softmax because pytorch cross entropy loss includes softmax
