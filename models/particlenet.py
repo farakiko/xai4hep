@@ -1,3 +1,5 @@
+from jetnet.datasets import JetNet, TopTagging
+import jetnet
 from torch_geometric.data import Data, Dataset
 import time
 import matplotlib.pyplot as plt
@@ -98,16 +100,18 @@ class ParticleNet(nn.Module):
         self.kernel_sizes = [self.node_feat_size, 64, 128, 256]
         self.input_sizes = np.cumsum(self.kernel_sizes)  # [4, 4+64, 4+64+128, 4+64+128+256]
         self.fc_size = 256
-        self.dropout = 0.1
-        self.dropout_layer = nn.Dropout(p=self.dropout)
+        # self.dropout = 0.1
+        # self.dropout_layer = nn.Dropout(p=self.dropout)
 
         # define the edgeconvblocks
         self.edge_conv_blocks = nn.ModuleList()
         for i in range(0, self.num_edge_conv_blocks):
-            self.edge_conv_blocks.append(EdgeConvBlock(self.input_sizes[i], self.kernel_sizes[i + 1]))
+            # self.edge_conv_blocks.append(EdgeConvBlock(self.input_sizes[i], self.kernel_sizes[i + 1]))
+            self.edge_conv_blocks.append(EdgeConvBlock(self.kernel_sizes[i], self.kernel_sizes[i + 1]))  # if no skip
 
         # define the fully connected networks (post-edgeconvs)
-        self.fc1 = nn.Linear(self.input_sizes[-1], self.fc_size)
+        # self.fc1 = nn.Linear(self.input_sizes[-1], self.fc_size)
+        self.fc1 = nn.Linear(self.kernel_sizes[-1], self.fc_size)  # if no skip
         self.fc2 = nn.Linear(self.fc_size, self.num_classes)
 
     def forward(self, batch, relu_activations=False):
@@ -124,50 +128,44 @@ class ParticleNet(nn.Module):
 
             out, edge_activations[f"edge_conv_{i}"] = self.edge_conv_blocks[i](x, edge_index[f"edge_conv_{i}"])
 
-            x = torch.cat((out, x), dim=1)  # concatenating with latent features i.e. skip connections per EdgeConvBlock
+            # x = torch.cat((out, x), dim=1)  # concatenating with latent features i.e. skip connections per EdgeConvBlock
+            x = out  # if no skip
 
             edge_block_activations[f"edge_conv_{i}"] = x
 
         x = global_mean_pool(x, batch)
 
         x = self.fc1(x)
-        x = self.dropout_layer(F.relu(x))
+        # x = self.dropout_layer(F.relu(x))
         x = self.fc2(x)
 
         # no softmax because pytorch cross entropy loss includes softmax
         return x, edge_activations, edge_block_activations, edge_index
 
-
-# import jetnet
-# from jetnet.datasets import JetNet, TopTagging
 #
 # # get sample dataset
 # dataset = jetnet.datasets.JetNet(jet_type="g")
 #
 # # load the dataset in a convenient pyg format
-# dataset_pyg = []
-# for aa in dataset:
-#     x = aa[0][aa[0][:, 3] == 0.5][:, :3]  # skip the mask
-#     d = Data(x=x, y=data[1])
-#     dataset_pyg.append(d)
+# print('Loading training datafiles...')
+# loader = DataLoader(torch.load(f"../data/toptagging/test/processed/data_{0}.pt"), batch_size=1, shuffle=True)
 #
-# len(dataset_pyg)
-# loader = DataLoader(dataset_pyg, batch_size=3, shuffle=False)
-#
-# for i, batch in enumerate(loader):
+# for batch in loader:
 #     break
 #
-# batch
+# model_kwargs = {
+#     "node_feat_size": 7,
+#     "num_classes": 1,
+#     "k": 12,
+# }
 #
-#
-# model = ParticleNet(node_feat_size=3)
-#
-# # try:
-# #     state_dict = model.module.state_dict()
-# # except AttributeError:
-# #     state_dict = model.state_dict()
-# # torch.save(state_dict, f'../state_dict.pth')
-#
+# model = ParticleNet(**model_kwargs)
 #
 # _, _, _, edge_index = model(batch)
-# edge_index["edge_conv_0"]
+#
+
+# try:
+#     state_dict = model.module.state_dict()
+# except AttributeError:
+#     state_dict = model.state_dict()
+# torch.save(state_dict, f'../state_dict.pth')
