@@ -1,5 +1,3 @@
-from jetnet.datasets import JetNet, TopTagging
-import jetnet
 from torch_geometric.data import Data, Dataset
 import time
 import matplotlib.pyplot as plt
@@ -100,18 +98,18 @@ class ParticleNet(nn.Module):
         self.kernel_sizes = [self.node_feat_size, 64, 128, 256]
         self.input_sizes = np.cumsum(self.kernel_sizes)  # [4, 4+64, 4+64+128, 4+64+128+256]
         self.fc_size = 256
-        # self.dropout = 0.1
-        # self.dropout_layer = nn.Dropout(p=self.dropout)
+        self.dropout = 0.1
+        self.dropout_layer = nn.Dropout(p=self.dropout)
 
         # define the edgeconvblocks
         self.edge_conv_blocks = nn.ModuleList()
         for i in range(0, self.num_edge_conv_blocks):
-            # self.edge_conv_blocks.append(EdgeConvBlock(self.input_sizes[i], self.kernel_sizes[i + 1]))
-            self.edge_conv_blocks.append(EdgeConvBlock(self.kernel_sizes[i], self.kernel_sizes[i + 1]))  # if no skip
+            self.edge_conv_blocks.append(EdgeConvBlock(self.input_sizes[i], self.kernel_sizes[i + 1]))
+            # self.edge_conv_blocks.append(EdgeConvBlock(self.kernel_sizes[i], self.kernel_sizes[i + 1]))  # if no skip
 
         # define the fully connected networks (post-edgeconvs)
-        # self.fc1 = nn.Linear(self.input_sizes[-1], self.fc_size)
-        self.fc1 = nn.Linear(self.kernel_sizes[-1], self.fc_size)  # if no skip
+        self.fc1 = nn.Linear(self.input_sizes[-1], self.fc_size)
+        # self.fc1 = nn.Linear(self.kernel_sizes[-1], self.fc_size)  # if no skip
         self.fc2 = nn.Linear(self.fc_size, self.num_classes)
 
     def forward(self, batch, relu_activations=False):
@@ -128,15 +126,15 @@ class ParticleNet(nn.Module):
 
             out, edge_activations[f"edge_conv_{i}"] = self.edge_conv_blocks[i](x, edge_index[f"edge_conv_{i}"])
 
-            # x = torch.cat((out, x), dim=1)  # concatenating with latent features i.e. skip connections per EdgeConvBlock
-            x = out  # if no skip
+            x = torch.cat((out, x), dim=1)  # concatenating with latent features i.e. skip connections per EdgeConvBlock
+            # x = out  # if no skip
 
             edge_block_activations[f"edge_conv_{i}"] = x
 
         x = global_mean_pool(x, batch)
 
         x = self.fc1(x)
-        # x = self.dropout_layer(F.relu(x))
+        x = self.dropout_layer(F.relu(x))
         x = self.fc2(x)
 
         # no softmax because pytorch cross entropy loss includes softmax
