@@ -224,7 +224,7 @@ if __name__ == "__main__":
     model = ParticleNet(**model_kwargs)
 
     # save model_kwargs and hyperparameters
-    save_model(args, args.model_prefix, outpath, model_kwargs)
+    save_model(args, args.model_prefix, outpath, model_kwargs, model.kernel_sizes, model.fc_size, model.dropout)
 
     print(model)
     print(args.model_prefix)

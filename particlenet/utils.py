@@ -14,7 +14,7 @@ from torch_geometric.data.data import BaseData
 from torch_geometric.loader import DataListLoader, DataLoader
 
 
-def save_model(args, model_fname, outpath, model_kwargs):
+def save_model(args, model_fname, outpath, model_kwargs, kernel_sizes, fc_size, dropout):
 
     if not osp.isdir(outpath):
         os.makedirs(outpath)
@@ -42,7 +42,10 @@ def save_model(args, model_fname, outpath, model_kwargs):
                 "n_epochs": args.n_epochs,
                 "lr": args.lr,
                 "batch_size": args.batch_size,
-                "nearest": args.nearest
+                "nearest": args.nearest,
+                "kernel_sizes": kernel_sizes,
+                "fc_size": fc_size,
+                "dropout": dropout
             },
             fp,
         )
