@@ -63,7 +63,7 @@ parser.add_argument("--n_epochs", type=int, default=3, help="number of training 
 parser.add_argument("--batch_size", type=int, default=100)
 parser.add_argument("--patience", type=int, default=10, help="patience before early stopping")
 parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
-parser.add_argument("--nearest", type=int, default=4, help="k nearest neighbors in gravnet layer")
+parser.add_argument("--nearest", type=int, default=12, help="k nearest neighbors in gravnet layer")
 parser.add_argument("--make_predictions", dest="make_predictions",
                     action="store_true", help="run inference on the test data")
 parser.add_argument("--make_plots", dest="make_plots", action="store_true", help="makes plots of the test predictions")
