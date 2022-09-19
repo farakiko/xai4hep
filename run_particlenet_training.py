@@ -226,6 +226,12 @@ if __name__ == "__main__":
     # save model_kwargs and hyperparameters
     save_model(args, args.model_prefix, outpath, model_kwargs, model.kernel_sizes, model.fc_size, model.dropout)
 
+    try:
+        state_dict = model.module.state_dict()
+    except AttributeError:
+        state_dict = model.state_dict()
+    torch.save(state_dict, f"{outpath}/before_training_weights.pth")
+
     print(model)
     print(args.model_prefix)
 
@@ -281,6 +287,8 @@ if __name__ == "__main__":
     plt.style.use(hep.style.CMS)
     plt.rcParams.update({'font.size': 20})
 
+    print('Loading testing datafiles...')
+    data_test = []
     for i in range(4):
         data_test = data_test + torch.load(f"{args.dataset}/val/processed/data_{i}.pt")
         print(f"- loaded file {i} for test")
