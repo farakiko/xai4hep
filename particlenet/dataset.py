@@ -148,7 +148,15 @@ class TopTaggingDataset(Dataset):
                                   torch.from_numpy(part_logptrel[jet_index].reshape(-1, 1)),
                                   torch.from_numpy(part_logerel[jet_index].reshape(-1, 1)),
                                   torch.from_numpy(part_deltaR[jet_index].reshape(-1, 1))], axis=1),
-                     y=torch.tensor(v['label'][jet_index]).long()))
+                     y=torch.tensor(v['label'][jet_index]).long(),
+                     ))
+
+            if self.mode == 'test':     # add (px,py,pz,E) info for lrp fastjet tests
+                data[-1]['px'] = torch.from_numpy(v['part_px'][jet_index])
+                data[-1]['py'] = torch.from_numpy(v['part_py'][jet_index])
+                data[-1]['pz'] = torch.from_numpy(v['part_pz'][jet_index])
+                data[-1]['E'] = torch.from_numpy(v['part_energy'][jet_index])
+
             if jet_index % 100000 == 0 and jet_index != 0:
                 print(f"saving datafile data_{c}")
                 torch.save(data, f'{self.processed_dir}/data_{c}.pt')
@@ -181,7 +189,8 @@ if __name__ == "__main__":
 
     """
     To process train data: python dataset.py --dataset ../data/toptagging/ --mode train
-    To process val data:  python dataset.py --dataset ../data/toptagging/ --mode val
+    To process val data:   python dataset.py --dataset ../data/toptagging/ --mode val
+    To process test data:  python dataset.py --dataset ../data/toptagging/ --mode test
     """
 
     args = parse_args()

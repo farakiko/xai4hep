@@ -33,7 +33,7 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument("--outpath", type=str, default='./experiments/', help="path to the trained model directory")
 parser.add_argument("--model", type=str, default="ParticleNet_6", help="Which model to load")
-parser.add_argument("--data", type=str, default='./data/toptagging/train/processed/data_0.pt', help="path to datafile")
+parser.add_argument("--data", type=str, default='./data/toptagging/test/processed/data_0.pt', help="path to datafile")
 
 args = parser.parse_args()
 
@@ -61,6 +61,8 @@ if __name__ == "__main__":
         model_kwargs = pkl.load(f)
 
     state_dict = torch.load(f"{args.outpath}/{args.model}/best_epoch_weights.pth", map_location=device)
+    # state_dict = torch.load(f"{args.outpath}/{args.model}/epoch_0_weights.pth", map_location=device)
+    # state_dict = torch.load(f"{args.outpath}/{args.model}/before_training_weights.pth", map_location=device)
 
     model = ParticleNet(**model_kwargs)
     model.load_state_dict(state_dict)
@@ -71,10 +73,11 @@ if __name__ == "__main__":
     # run lrp
     lrp = LRP_ParticleNet(device='cpu', model=model, epsilon=1e-8)
     batch_x_list, batch_y_list, Rscores_list, R_edges_list, edge_index_list = [], [], [], [], []
+    batch_px_list, batch_py_list, batch_pz_list, batch_E_list = [], [], [], []
 
     for i, jet in enumerate(loader):
 
-        if i == 1000:
+        if i == 10:
             break
 
         print(f'Explaining jet # {i}')
@@ -94,6 +97,13 @@ if __name__ == "__main__":
 
         batch_x_list.append(jet.x)
         batch_y_list.append(jet.y)
+
+        # for fast jet
+        batch_px_list.append(jet.px)
+        batch_py_list.append(jet.py)
+        batch_pz_list.append(jet.pz)
+        batch_E_list.append(jet.E)
+
         Rscores_list.append(Rscores)
         R_edges_list.append(R_edges)
         edge_index_list.append(edge_index)
@@ -101,13 +111,24 @@ if __name__ == "__main__":
         print('------------------------------------------------------')
 
     # store the Rscores in the binder folder for further notebook plotting
-    with open('binder/batch_x.pkl', 'wb') as handle:
+    with open(f'binder/{args.model}/Rscores/batch_x.pkl', 'wb') as handle:
         pkl.dump(batch_x_list, handle)
-    with open('binder/batch_y.pkl', 'wb') as handle:
+    with open(f'binder/{args.model}/Rscores/batch_y.pkl', 'wb') as handle:
         pkl.dump(batch_y_list, handle)
-    with open('binder/Rscores.pkl', 'wb') as handle:
+
+    # for fastjet
+    with open(f'binder/{args.model}/Rscores/batch_px.pkl', 'wb') as handle:
+        pkl.dump(batch_px_list, handle)
+    with open(f'binder/{args.model}/Rscores/batch_py.pkl', 'wb') as handle:
+        pkl.dump(batch_py_list, handle)
+    with open(f'binder/{args.model}/Rscores/batch_pz.pkl', 'wb') as handle:
+        pkl.dump(batch_pz_list, handle)
+    with open(f'binder/{args.model}/Rscores/batch_E.pkl', 'wb') as handle:
+        pkl.dump(batch_E_list, handle)
+
+    with open(f'binder/{args.model}/Rscores/Rscores.pkl', 'wb') as handle:
         pkl.dump(Rscores_list, handle)
-    with open('binder/R_edges.pkl', 'wb') as handle:
+    with open(f'binder/{args.model}/Rscores/R_edges.pkl', 'wb') as handle:
         pkl.dump(R_edges_list, handle)
-    with open('binder/edge_index.pkl', 'wb') as handle:
+    with open(f'binder/{args.model}/Rscores/edge_index.pkl', 'wb') as handle:
         pkl.dump(edge_index_list, handle)

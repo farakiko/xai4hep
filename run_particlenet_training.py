@@ -7,33 +7,40 @@ from particlenet import (
     load_model,
     training_loop
 )
-from torch.nn.parallel import DistributedDataParallel as DDP
-import torch.multiprocessing as mp
-import torch.distributed as dist
-from torch_geometric.data import Data, Dataset
+
+import os
+import os.path as osp
+import sys
+from glob import glob
 import time
-import matplotlib.pyplot as plt
-import matplotlib
-import torch_geometric
+
+import numpy as np
 import pandas as pd
 import h5py
+
+import torch
+import torch_geometric
 from torch_geometric.data import Data, DataListLoader, Batch
 from torch_geometric.loader import DataLoader
 
+from torch.nn.parallel import DistributedDataParallel as DDP
+import torch.multiprocessing as mp
+import torch.distributed as dist
+
+from sklearn.metrics import roc_curve, auc
+
 import pickle as pkl
-import os.path as osp
-import os
-import sys
-from glob import glob
-
-import torch
-import numpy as np
-
 import json
-import os
-import os.path as osp
 
 import matplotlib
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import hist as hist2
+
+import mplhep as hep
+plt.style.use(hep.style.CMS)
+plt.rcParams.update({'font.size': 20})
+
 matplotlib.use("Agg")
 
 # Ignore divide by 0 errors
@@ -53,8 +60,6 @@ Author: Farouk Mokhtar
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--num_workers", type=int, default=2, help="number of subprocesses used for data loading")
-parser.add_argument("--prefetch_factor", type=int, default=1, help="number of samples loaded in advance by each worker")
 parser.add_argument("--outpath", type=str, default="./experiments/", help="output folder")
 parser.add_argument("--model_prefix", type=str, default="ParticleNet_model", help="directory to hold the model and plots")
 parser.add_argument("--dataset", type=str, default="./data/toptagging/", help="dataset path")
@@ -64,9 +69,6 @@ parser.add_argument("--batch_size", type=int, default=100)
 parser.add_argument("--patience", type=int, default=10, help="patience before early stopping")
 parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
 parser.add_argument("--nearest", type=int, default=12, help="k nearest neighbors in gravnet layer")
-parser.add_argument("--make_predictions", dest="make_predictions",
-                    action="store_true", help="run inference on the test data")
-parser.add_argument("--make_plots", dest="make_plots", action="store_true", help="makes plots of the test predictions")
 
 args = parser.parse_args()
 
@@ -85,8 +87,8 @@ def setup(rank, world_size):
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = "12355"
 
-    # dist.init_process_group("gloo", rank=rank, world_size=world_size)
-    dist.init_process_group("nccl", rank=rank, world_size=world_size)  # should be faster for DistributedDataParallel on gpus
+    # should be faster tahn "gloo" for DistributedDataParallel on gpus
+    dist.init_process_group("nccl", rank=rank, world_size=world_size)
 
 
 def cleanup():
@@ -107,8 +109,6 @@ def run_demo(demo_fn, world_size, args, data_train, data_valid, model, num_class
     world_size: number of gpus available
     mode: 'train' or 'inference'
     """
-
-    # mp.set_start_method('forkserver')
 
     mp.spawn(
         demo_fn,
@@ -210,8 +210,8 @@ if __name__ == "__main__":
     torch.backends.cudnn.benchmark = True
 
     # setup the input/output dimension of the model
-    num_features = 7  # we have 7 features
-    num_classes = 1  # we have 6 classes/pids for delphes
+    num_features = 7  # we have 7 input features
+    num_classes = 1  # we have one output node
 
     outpath = osp.join(args.outpath, args.model_prefix)
 
@@ -226,6 +226,7 @@ if __name__ == "__main__":
     # save model_kwargs and hyperparameters
     save_model(args, args.model_prefix, outpath, model_kwargs, model.kernel_sizes, model.fc_size, model.dropout)
 
+    # save the weights before training for lrp comparisons
     try:
         state_dict = model.module.state_dict()
     except AttributeError:
@@ -256,37 +257,6 @@ if __name__ == "__main__":
         train(device, world_size, args, data_train, data_valid, model, num_classes, outpath)
 
     # quick test
-    import time
-    import numpy as np
-    import pandas as pd
-    import hist as hist2
-    import matplotlib
-    import matplotlib.pyplot as plt
-    import matplotlib.colors as mcolors
-    import mplhep as hep
-
-    import pickle as pkl
-    import sys
-    import torch
-    import torch.nn as nn
-    from torch_geometric.loader import DataListLoader, DataLoader
-    from torch_geometric.data import Data, Batch
-
-    import numpy as np
-    import matplotlib.pyplot as plt
-    from itertools import cycle
-
-    from sklearn import svm, datasets
-    from sklearn.metrics import roc_curve, auc
-    from sklearn.model_selection import train_test_split
-    from sklearn.preprocessing import label_binarize
-    from sklearn.multiclass import OneVsRestClassifier
-    from sklearn.metrics import roc_auc_score
-
-    import mplhep as hep
-    plt.style.use(hep.style.CMS)
-    plt.rcParams.update({'font.size': 20})
-
     print('Loading testing datafiles...')
     data_test = []
     for i in range(4):
@@ -309,6 +279,10 @@ if __name__ == "__main__":
             y_score = torch.cat([y_score, preds[:].reshape(-1)])
             y_test = torch.cat([y_test, batch.y])
 
+    # save the predictions
+    torch.save(y_test, f"{outpath}/y_test.pt")
+    torch.save(y_score, f"{outpath}/y_score.pt")
+
     # Compute ROC curve and ROC area for each class
     fpr, tpr, _ = roc_curve(y_test, y_score)
     roc_auc = auc(fpr, tpr)
@@ -329,4 +303,4 @@ if __name__ == "__main__":
     plt.yscale('log')
     # plt.title("")
     plt.legend(loc="lower right")
-    plt.savefig(f"{args.outpath}/{args.model_prefix}/Roc_curve.pdf")
+    plt.savefig(f"{outpath}/Roc_curve.pdf")
