@@ -60,9 +60,9 @@ if __name__ == "__main__":
     with open(f"{args.outpath}/{args.model}/model_kwargs.pkl", "rb") as f:
         model_kwargs = pkl.load(f)
 
-    state_dict = torch.load(f"{args.outpath}/{args.model}/best_epoch_weights.pth", map_location=device)
+    # state_dict = torch.load(f"{args.outpath}/{args.model}/best_epoch_weights.pth", map_location=device)
     # state_dict = torch.load(f"{args.outpath}/{args.model}/epoch_0_weights.pth", map_location=device)
-    # state_dict = torch.load(f"{args.outpath}/{args.model}/before_training_weights.pth", map_location=device)
+    state_dict = torch.load(f"{args.outpath}/{args.model}/before_training_weights.pth", map_location=device)
 
     model = ParticleNet(**model_kwargs)
     model.load_state_dict(state_dict)
@@ -77,7 +77,7 @@ if __name__ == "__main__":
 
     for i, jet in enumerate(loader):
 
-        if i == 10:
+        if i == 1000:
             break
 
         print(f'Explaining jet # {i}')
@@ -104,9 +104,9 @@ if __name__ == "__main__":
         batch_pz_list.append(jet.pz)
         batch_E_list.append(jet.E)
 
-        Rscores_list.append(Rscores)
-        R_edges_list.append(R_edges)
-        edge_index_list.append(edge_index)
+        # Rscores_list.append(Rscores)
+        R_edges_list.append(R_edges['edge_conv_2'])
+        edge_index_list.append(edge_index['edge_conv_2'])
 
         print('------------------------------------------------------')
 
@@ -126,8 +126,8 @@ if __name__ == "__main__":
     with open(f'binder/{args.model}/Rscores/batch_E.pkl', 'wb') as handle:
         pkl.dump(batch_E_list, handle)
 
-    with open(f'binder/{args.model}/Rscores/Rscores.pkl', 'wb') as handle:
-        pkl.dump(Rscores_list, handle)
+    # with open(f'binder/{args.model}/Rscores/Rscores.pkl', 'wb') as handle:
+    #     pkl.dump(Rscores_list, handle)
     with open(f'binder/{args.model}/Rscores/R_edges.pkl', 'wb') as handle:
         pkl.dump(R_edges_list, handle)
     with open(f'binder/{args.model}/Rscores/edge_index.pkl', 'wb') as handle:
