@@ -84,6 +84,13 @@ def train(rank, model, train_loader, valid_loader, batch_size, optimizer, num_cl
     t = 0
     for i, batch in enumerate(loader):
 
+        # transformations for better training
+        batch.x[:, 2] = (batch.x[:, 2] - 1.7) * 0.7  # part_pt_log
+        batch.x[:, 3] = (batch.x[:, 3] - 2.0) * 0.7  # part_e_log
+        batch.x[:, 4] = (batch.x[:, 4] + 4.7) * 0.7  # part_logptrel
+        batch.x[:, 5] = (batch.x[:, 5] + 4.7) * 0.7  # part_logerel
+        batch.x[:, 6] = (batch.x[:, 6] - 0.2) * 4.7  # part_deltaR
+
         # run forward pass
         t0 = time.time()
         preds, _, _, _ = model(batch.to(rank))
@@ -163,6 +170,16 @@ def training_loop(
 
         # training step
         model.train()
+
+        if epoch <= 8:
+            optimizer = torch.optim.Adam(model.parameters(), lr=(3 + 3.375 * epoch) * 1e-4, weight_decay=1e-4)
+        elif epoch <= 16:
+            optimizer = torch.optim.Adam(model.parameters(), lr=3e-3 - (3.375 * epoch - 8) * 1e-4, weight_decay=1e-4)
+        elif epoch <= 20:
+            optimizer = torch.optim.Adam(model.parameters(), lr=3e-4 - (0.7487 * epoch - 16) * 1e-4, weight_decay=1e-4)
+        elif epoch <= 24:
+            optimizer = torch.optim.Adam(model.parameters(), lr=5e-7, weight_decay=1e-4)
+
         losses = train(
             rank, model, train_loader, valid_loader, batch_size, optimizer, num_classes, outpath
         )
