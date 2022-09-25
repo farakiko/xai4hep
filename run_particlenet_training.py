@@ -19,6 +19,7 @@ import pandas as pd
 import h5py
 
 import torch
+import torch.nn as nn
 import torch_geometric
 from torch_geometric.data import Data, DataListLoader, Batch
 from torch_geometric.loader import DataLoader
@@ -61,14 +62,14 @@ Author: Farouk Mokhtar
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--outpath", type=str, default="./experiments/", help="output folder")
-parser.add_argument("--model_prefix", type=str, default="ParticleNet_model", help="directory to hold the model and plots")
+parser.add_argument("--model_prefix", type=str, default="ParticleNet_model2", help="directory to hold the model and plots")
 parser.add_argument("--dataset", type=str, default="./data/toptagging/", help="dataset path")
 parser.add_argument("--overwrite", dest="overwrite", action="store_true", help="Overwrites the model if True")
 parser.add_argument("--n_epochs", type=int, default=3, help="number of training epochs")
-parser.add_argument("--batch_size", type=int, default=100)
-parser.add_argument("--patience", type=int, default=10, help="patience before early stopping")
-parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
-parser.add_argument("--nearest", type=int, default=12, help="k nearest neighbors in gravnet layer")
+parser.add_argument("--batch_size", type=int, default=384)
+parser.add_argument("--patience", type=int, default=20, help="patience before early stopping")
+parser.add_argument("--lr", type=float, default=3e-4, help="learning rate")
+parser.add_argument("--nearest", type=int, default=16, help="k nearest neighbors in gravnet layer")
 
 args = parser.parse_args()
 
@@ -149,7 +150,7 @@ def train_ddp(rank, world_size, args, data_train, data_valid, model, num_classes
     model.train()
     ddp_model = DDP(model, device_ids=[rank])
 
-    optimizer = torch.optim.Adam(ddp_model.parameters(), lr=args.lr)
+    optimizer = torch.optim.Adam(ddp_model.parameters(), lr=args.lr, weight_decay=1e-4)
 
     training_loop(
         rank,
@@ -269,6 +270,8 @@ if __name__ == "__main__":
     y_score = None
     y_test = None
     for i, batch in enumerate(loader):
+        print(f"making prediction on sample # {i}")
+
         preds, _, _, _ = model(batch)
         preds = sig(preds).detach()
 
@@ -280,10 +283,12 @@ if __name__ == "__main__":
             y_test = torch.cat([y_test, batch.y])
 
     # save the predictions
+    print("saving the predictions")
     torch.save(y_test, f"{outpath}/y_test.pt")
     torch.save(y_score, f"{outpath}/y_score.pt")
 
     # Compute ROC curve and ROC area for each class
+    print("making the Roc curves")
     fpr, tpr, _ = roc_curve(y_test, y_score)
     roc_auc = auc(fpr, tpr)
 

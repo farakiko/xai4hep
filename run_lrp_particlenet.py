@@ -55,14 +55,15 @@ if __name__ == "__main__":
         device = torch.device('cpu')
 
     loader = DataLoader(torch.load(f"{args.data}"), batch_size=1, shuffle=True)
+    print(len(loader))
 
     # load a pretrained model and update the outpath
     with open(f"{args.outpath}/{args.model}/model_kwargs.pkl", "rb") as f:
         model_kwargs = pkl.load(f)
 
-    # state_dict = torch.load(f"{args.outpath}/{args.model}/best_epoch_weights.pth", map_location=device)
+    state_dict = torch.load(f"{args.outpath}/{args.model}/best_epoch_weights.pth", map_location=device)
     # state_dict = torch.load(f"{args.outpath}/{args.model}/epoch_0_weights.pth", map_location=device)
-    state_dict = torch.load(f"{args.outpath}/{args.model}/before_training_weights.pth", map_location=device)
+    # state_dict = torch.load(f"{args.outpath}/{args.model}/before_training_weights_{j}.pth", map_location=device)
 
     model = ParticleNet(**model_kwargs)
     model.load_state_dict(state_dict)
@@ -77,7 +78,7 @@ if __name__ == "__main__":
 
     for i, jet in enumerate(loader):
 
-        if i == 1000:
+        if i == 10:
             break
 
         print(f'Explaining jet # {i}')
@@ -85,15 +86,15 @@ if __name__ == "__main__":
 
         # explain jet
         try:
-            Rscores, R_edges, edge_index, R_scores_b4 = lrp.explain(jet, neuron_to_explain=0)
+            output_Rscores, R_edges, edge_index, last_EdgeConv_Rscores = lrp.explain(jet, neuron_to_explain=0)
         except:
-            print('jet is broken so skipping')
+            print("jet is not processed correctly so skipping it")
             continue
 
         # check the accuracy of the input Rscores
         rtol = 3
-        if torch.abs(Rscores.sum() - R_scores_b4.sum()) > rtol:
-            print('--> High Input Rscore error due to the depth of the model')
+        if torch.abs(output_Rscores - last_EdgeConv_Rscores) > rtol:
+            print('--> Last EdgeConv block Rscores not conserved...')
 
         batch_x_list.append(jet.x)
         batch_y_list.append(jet.y)
@@ -105,30 +106,34 @@ if __name__ == "__main__":
         batch_E_list.append(jet.E)
 
         # Rscores_list.append(Rscores)
-        R_edges_list.append(R_edges['edge_conv_2'])
-        edge_index_list.append(edge_index['edge_conv_2'])
+        R_edges_list.append(R_edges)
+        edge_index_list.append(edge_index)
 
         print('------------------------------------------------------')
 
+    PATH = f'binder/{args.model}/Rscores_best/'
+    if not os.path.exists(PATH):
+        os.makedirs(PATH)
+
     # store the Rscores in the binder folder for further notebook plotting
-    with open(f'binder/{args.model}/Rscores/batch_x.pkl', 'wb') as handle:
+    with open(f'{PATH}/batch_x.pkl', 'wb') as handle:
         pkl.dump(batch_x_list, handle)
-    with open(f'binder/{args.model}/Rscores/batch_y.pkl', 'wb') as handle:
+    with open(f'{PATH}/batch_y.pkl', 'wb') as handle:
         pkl.dump(batch_y_list, handle)
 
     # for fastjet
-    with open(f'binder/{args.model}/Rscores/batch_px.pkl', 'wb') as handle:
+    with open(f'{PATH}/batch_px.pkl', 'wb') as handle:
         pkl.dump(batch_px_list, handle)
-    with open(f'binder/{args.model}/Rscores/batch_py.pkl', 'wb') as handle:
+    with open(f'{PATH}/batch_py.pkl', 'wb') as handle:
         pkl.dump(batch_py_list, handle)
-    with open(f'binder/{args.model}/Rscores/batch_pz.pkl', 'wb') as handle:
+    with open(f'{PATH}/batch_pz.pkl', 'wb') as handle:
         pkl.dump(batch_pz_list, handle)
-    with open(f'binder/{args.model}/Rscores/batch_E.pkl', 'wb') as handle:
+    with open(f'{PATH}/batch_E.pkl', 'wb') as handle:
         pkl.dump(batch_E_list, handle)
 
-    # with open(f'binder/{args.model}/Rscores/Rscores.pkl', 'wb') as handle:
+    # with open(f'{PATH}/Rscores.pkl', 'wb') as handle:
     #     pkl.dump(Rscores_list, handle)
-    with open(f'binder/{args.model}/Rscores/R_edges.pkl', 'wb') as handle:
+    with open(f'{PATH}/R_edges.pkl', 'wb') as handle:
         pkl.dump(R_edges_list, handle)
-    with open(f'binder/{args.model}/Rscores/edge_index.pkl', 'wb') as handle:
+    with open(f'{PATH}/edge_index.pkl', 'wb') as handle:
         pkl.dump(edge_index_list, handle)

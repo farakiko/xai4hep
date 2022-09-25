@@ -57,10 +57,10 @@ class EdgeConv_lrp(MessagePassing):
 
     def message(self, x_i: Tensor, x_j: Tensor) -> Tensor:
 
-        # self.edge_activations = self.nn(torch.cat([x_i, x_j - x_i], dim=-1))
-        # return self.nn(torch.cat([x_i, x_j - x_i], dim=-1))
-        self.edge_activations = self.nn(torch.cat([x_i, x_j], dim=-1))
-        return self.nn(torch.cat([x_i, x_j], dim=-1))
+        self.edge_activations = self.nn(torch.cat([x_i, x_j - x_i], dim=-1))
+        return self.nn(torch.cat([x_i, x_j - x_i], dim=-1))
+        # self.edge_activations = self.nn(torch.cat([x_i, x_j], dim=-1))
+        # return self.nn(torch.cat([x_i, x_j], dim=-1))
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(nn={self.nn})"
@@ -76,7 +76,7 @@ class EdgeConvBlock(nn.Module):
         layers.append(nn.BatchNorm1d(layer_size))
         layers.append(nn.ReLU())
 
-        for i in range(1):
+        for i in range(3):
             layers.append(nn.Linear(layer_size, layer_size))
             layers.append(nn.BatchNorm1d(layer_size))
             layers.append(nn.ReLU())
@@ -102,7 +102,7 @@ class ParticleNet(nn.Module):
         self.fc_size = 256
 
         self.dropout = 0.1
-        # self.dropout_layer = nn.Dropout(p=self.dropout)
+        self.dropout_layer = nn.Dropout(p=self.dropout)
 
         # define the edgeconvblocks
         self.edge_conv_blocks = nn.ModuleList()
@@ -137,7 +137,7 @@ class ParticleNet(nn.Module):
         x = global_mean_pool(x, batch)
 
         x = self.fc1(x)
-        # x = self.dropout_layer(F.relu(x))
+        x = self.dropout_layer(F.relu(x))
         x = self.fc2(x)
 
         # no softmax because pytorch cross entropy loss includes softmax

@@ -102,7 +102,7 @@ class LRP_ParticleNet():
         R_scores = preds[:, neuron_to_explain].reshape(-1, 1).detach()
 
         print(f'Sum of R_scores of the output: {round(R_scores.sum().item(),4)}')
-        self.R_scores_b4 = R_scores
+        self.output_Rscores = R_scores.sum()
 
         # run LRP
         R_scores = self.redistribute_across_fc_layer(R_scores, 'fc2', neuron_to_explain)
@@ -123,7 +123,10 @@ class LRP_ParticleNet():
             R_scores, R_edges[f'edge_conv_{idx}'] = self.redistribute_EdgeConv(R_scores, idx)
             print(f'R_scores after EdgeConv # {idx}: {round((R_scores.sum()).item(),4)}')
 
-        return R_scores, R_edges, self.edge_index, self.R_scores_b4
+            if idx == self.num_convs - 1:
+                self.last_EdgeConv_Rscores = R_scores.sum()
+
+        return self.output_Rscores, R_edges, self.edge_index, self.last_EdgeConv_Rscores
 
     """
     EdgeConv redistribution
