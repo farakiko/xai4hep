@@ -57,10 +57,10 @@ class EdgeConv_lrp(MessagePassing):
 
     def message(self, x_i: Tensor, x_j: Tensor) -> Tensor:
 
-        # self.edge_activations = self.nn(torch.cat([x_i, x_j - x_i], dim=-1))
-        # return self.nn(torch.cat([x_i, x_j - x_i], dim=-1))
-        self.edge_activations = self.nn(torch.cat([x_i, x_j], dim=-1))
-        return self.nn(torch.cat([x_i, x_j], dim=-1))
+        self.edge_activations = self.nn(torch.cat([x_i, x_j - x_i], dim=-1))
+        return self.nn(torch.cat([x_i, x_j - x_i], dim=-1))
+        # self.edge_activations = self.nn(torch.cat([x_i, x_j], dim=-1))
+        # return self.nn(torch.cat([x_i, x_j], dim=-1))
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(nn={self.nn})"
