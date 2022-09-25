@@ -66,7 +66,7 @@ parser.add_argument("--model_prefix", type=str, default="ParticleNet_model2", he
 parser.add_argument("--dataset", type=str, default="./data/toptagging/", help="dataset path")
 parser.add_argument("--overwrite", dest="overwrite", action="store_true", help="Overwrites the model if True")
 parser.add_argument("--n_epochs", type=int, default=3, help="number of training epochs")
-parser.add_argument("--batch_size", type=int, default=384)
+parser.add_argument("--batch_size", type=int, default=100)
 parser.add_argument("--patience", type=int, default=20, help="patience before early stopping")
 parser.add_argument("--lr", type=float, default=3e-4, help="learning rate")
 parser.add_argument("--nearest", type=int, default=16, help="k nearest neighbors in gravnet layer")
