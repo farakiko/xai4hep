@@ -172,13 +172,15 @@ def training_loop(
         model.train()
 
         if epoch <= 8:
-            optimizer = torch.optim.Adam(model.parameters(), lr=(3 + 3.375 * epoch) * 1e-4, weight_decay=1e-4)
+            lr = (3 + 3.375 * epoch) * 1e-4
         elif epoch <= 16:
-            optimizer = torch.optim.Adam(model.parameters(), lr=3e-3 - (3.375 * epoch - 8) * 1e-4, weight_decay=1e-4)
+            lr = 3e-3 - (3.375 * (epoch - 8)) * 1e-4
         elif epoch <= 20:
-            optimizer = torch.optim.Adam(model.parameters(), lr=3e-4 - (0.7487 * epoch - 16) * 1e-4, weight_decay=1e-4)
+            lr = 3e-4 - (0.7487 * (epoch - 16)) * 1e-4
         elif epoch <= 24:
-            optimizer = torch.optim.Adam(model.parameters(), lr=5e-7, weight_decay=1e-4)
+            lr = 5e-7
+
+        optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-4)
 
         losses = train(
             rank, model, train_loader, valid_loader, batch_size, optimizer, num_classes, outpath
