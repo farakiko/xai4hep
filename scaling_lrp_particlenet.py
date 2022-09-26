@@ -5,7 +5,9 @@ import pickle as pkl
 import os.path as osp
 import os
 import sys
+import json
 from glob import glob
+import time
 
 import numpy as np
 import mplhep as hep
@@ -37,6 +39,23 @@ parser.add_argument("--dataset", type=str, default='./data/toptagging/', help="p
 parser.add_argument("--epoch", type=int, default=-1, help="which epoch to run Rscores on")
 
 args = parser.parse_args()
+
+
+def save_time_in_json(outpath, tf, ti, mode):
+    if mode == 'seconds':
+        dt = round((tf - ti), 3)
+    elif mode == 'minutes':
+        dt = round((tf - ti) / 60, 3)
+    elif mode == 'hours':
+        dt = round((tf - ti) / 3600, 3)
+
+    with open(f"{outpath}/time_{mode}.json", "w") as fp:  # dump hyperparameters
+        json.dump(
+            {
+                "time": dt,
+            },
+            fp,
+        )
 
 
 if __name__ == "__main__":
@@ -86,6 +105,7 @@ if __name__ == "__main__":
     batch_x_list, batch_y_list, Rscores_list, R_edges_list, edge_index_list = [], [], [], [], []
     batch_px_list, batch_py_list, batch_pz_list, batch_E_list = [], [], [], []
 
+    ti = time.time()
     for i, jet in enumerate(loader):
 
         if i == 10:
@@ -96,7 +116,7 @@ if __name__ == "__main__":
 
         # explain jet
         # try:
-        R_edges, edge_index = lrp.explain(jet, neuron_to_explain=0)
+        R_edges, edge_index = lrp.explain(jet.to(device), neuron_to_explain=0)
         # except:
         #     print("jet is not processed correctly so skipping it")
         #     continue
@@ -114,6 +134,10 @@ if __name__ == "__main__":
         edge_index_list.append(edge_index)
 
         print('------------------------------------------------------')
+
+    tf = time.time()
+    save_time_in_json(outpath, tf, ti, 'minutes')
+    save_time_in_json(outpath, tf, ti, 'hours')
 
     if args.epoch == -1:
         PATH = f'{outpath}/Rscores_best/'
