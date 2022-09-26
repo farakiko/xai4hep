@@ -76,7 +76,7 @@ class EdgeConvBlock(nn.Module):
         layers.append(nn.BatchNorm1d(layer_size))
         layers.append(nn.ReLU())
 
-        for i in range(1):
+        for i in range(3):
             layers.append(nn.Linear(layer_size, layer_size))
             layers.append(nn.BatchNorm1d(layer_size))
             layers.append(nn.ReLU())
