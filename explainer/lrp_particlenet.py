@@ -212,7 +212,8 @@ class LRP_ParticleNet():
                 # summing the edge_activations node_i (i.e. the edge_activations of the neighboring nodes)
                 deno = self.edge_activations[f'edge_conv_{idx}'][(
                     i * self.num_neighbors):(i * self.num_neighbors) + self.num_neighbors].sum(axis=0)
-
+                print('deno', deno.device)
+                print('self.edge_activations', self.edge_activations[f'edge_conv_{idx}'].device)
                 # redistribute the R_scores of node_i according to how activated each edge_activation was (normalized by deno)
                 R_new[(i * self.num_neighbors) + j] = R_old[i] * \
                     self.edge_activations[f'edge_conv_{idx}'][(i * self.num_neighbors) + j] / (deno + self.epsilon)
