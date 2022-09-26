@@ -111,11 +111,11 @@ if __name__ == "__main__":
         preds = sig(preds).detach().cpu()
 
         if y_score == None:
-            y_score = preds[:].reshape(-1)
-            y_test = batch.y
+            y_score = preds[:].reshape(-1).cpu()
+            y_test = batch.y.cpu()
         else:
-            y_score = torch.cat([y_score, preds[:].reshape(-1)])
-            y_test = torch.cat([y_test, batch.y])
+            y_score = torch.cat([y_score, preds[:].reshape(-1)]).cpu()
+            y_test = torch.cat([y_test, batch.y]).cpu()
 
     # save the predictions
     print("saving the predictions")
@@ -124,7 +124,7 @@ if __name__ == "__main__":
 
     # Compute ROC curve and ROC area for each class
     print("making the Roc curves")
-    fpr, tpr, _ = roc_curve(y_test, y_score)
+    fpr, tpr, _ = roc_curve(y_test.cpu(), y_score.cpu())
     roc_auc = auc(fpr, tpr)
 
     fig, ax = plt.subplots()
