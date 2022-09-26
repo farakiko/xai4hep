@@ -78,7 +78,7 @@ if __name__ == "__main__":
 
     for i, jet in enumerate(loader):
 
-        if i == 10:
+        if i == 1000:
             break
 
         print(f'Explaining jet # {i}')
