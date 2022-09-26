@@ -114,8 +114,8 @@ if __name__ == "__main__":
             y_score = preds[:].reshape(-1).cpu()
             y_test = batch.y.cpu()
         else:
-            y_score = torch.cat([y_score, preds[:].reshape(-1)]).cpu()
-            y_test = torch.cat([y_test, batch.y]).cpu()
+            y_score = torch.cat([y_score.cpu(), preds[:].reshape(-1).cpu()])
+            y_test = torch.cat([y_test.cpu(), batch.y.cpu()])
 
     # save the predictions
     print("saving the predictions")
