@@ -105,8 +105,8 @@ if __name__ == "__main__":
     y_test = None
     for i, batch in enumerate(loader):
         print(f"making prediction on sample # {i}")
-        if i == 3:
-            break
+        # if i == 3:
+        #     break
         preds, _, _, _ = model(batch.to(device))
         preds = sig(preds).detach().cpu()
 
