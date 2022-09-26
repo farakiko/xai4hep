@@ -148,7 +148,7 @@ class LRP_ParticleNet():
         # seperate the skip connection neurons from the others
         self.skip_connection_R_scores = R_scores[:, self.model.kernel_sizes[idx + 1]:]
         R_scores = R_scores[:, :self.model.kernel_sizes[idx + 1]]
-
+        print('33', R_scores.device)
         R_edges = self.redistribute_across_edge_pooling(R_scores, idx)
         print('4', R_edges.device)
 
@@ -214,8 +214,9 @@ class LRP_ParticleNet():
                     i * self.num_neighbors):(i * self.num_neighbors) + self.num_neighbors].sum(axis=0)
                 print('deno', deno.device)
                 print('self.edge_activations', self.edge_activations[f'edge_conv_{idx}'].device)
+                print('R_old', R_old.device)
                 # redistribute the R_scores of node_i according to how activated each edge_activation was (normalized by deno)
-                R_new[(i * self.num_neighbors) + j] = R_old[i] * \
+                R_new[(i * self.num_neighbors) + j] = R_old.to(self.device)[i] * \
                     self.edge_activations[f'edge_conv_{idx}'][(i * self.num_neighbors) + j] / (deno + self.epsilon)
 
         return R_new
