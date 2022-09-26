@@ -90,12 +90,12 @@ class LRP_ParticleNet():
         # detach gradients to speed-up quick LRP operations
         for elem in [self.edge_activations, self.edge_block_activations, self.edge_index]:
             for key, value in elem.items():
-                elem[key] = value.detach()
+                elem[key] = value.detach().to(self.device)
 
         # get the activations
         self.activations = {}
         for key, value in activations.items():
-            self.activations[key] = value.detach()
+            self.activations[key] = value.detach().to(self.device)
 
         # initialize the R_scores vector using the output predictions
         R_scores = preds[:, neuron_to_explain].reshape(-1, 1).detach()
