@@ -32,7 +32,7 @@ warnings.filterwarnings("ignore")
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--outpath", type=str, default='./experiments/', help="path to the trained model directory")
-parser.add_argument("--model", type=str, default="ParticleNet_6", help="Which model to load")
+parser.add_argument("--model", type=str, default="ParticleNet_3", help="Which model to load")
 parser.add_argument("--data", type=str, default='./data/toptagging/test/processed/data_0.pt', help="path to datafile")
 
 args = parser.parse_args()
@@ -41,7 +41,7 @@ args = parser.parse_args()
 if __name__ == "__main__":
     """
     e.g. to run on prp
-    python -u run_lrp_particlenet.py --model='ParticleNet_model' --outpath='/xai4hep/experiments/' --data='/xai4hep/toptagging/test/data_0.pt'
+    python -u run_lrp_particlenet.py --model='ParticleNet_3' --outpath='/xai4hepvol/' --data='/xai4hepvol/toptagging/test/processed/data_0.pt'
 
     """
 
@@ -61,9 +61,9 @@ if __name__ == "__main__":
     with open(f"{args.outpath}/{args.model}/model_kwargs.pkl", "rb") as f:
         model_kwargs = pkl.load(f)
 
-    state_dict = torch.load(f"{args.outpath}/{args.model}/best_epoch_weights.pth", map_location=device)
+    # state_dict = torch.load(f"{args.outpath}/{args.model}/best_epoch_weights.pth", map_location=device)
     # state_dict = torch.load(f"{args.outpath}/{args.model}/epoch_0_weights.pth", map_location=device)
-    # state_dict = torch.load(f"{args.outpath}/{args.model}/before_training_weights_{j}.pth", map_location=device)
+    state_dict = torch.load(f"{args.outpath}/{args.model}/weights/before_training_weights_0.pth", map_location=device)
 
     model = ParticleNet(**model_kwargs)
     model.load_state_dict(state_dict)
@@ -110,8 +110,12 @@ if __name__ == "__main__":
         edge_index_list.append(edge_index)
 
         print('------------------------------------------------------')
+    #
+    # PATH = f'binder/{args.model}/Rscores_best/'
+    # if not os.path.exists(PATH):
+    #     os.makedirs(PATH)
 
-    PATH = f'binder/{args.model}/Rscores_best/'
+    PATH = f'binder/{args.model}/Rscores_0/'
     if not os.path.exists(PATH):
         os.makedirs(PATH)
 
