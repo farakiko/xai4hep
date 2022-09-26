@@ -94,7 +94,7 @@ if __name__ == "__main__":
     # quick test
     print('Loading testing datafiles...')
     data_test = []
-    for i in range(1):
+    for i in range(4):
         data_test = data_test + torch.load(f"{args.dataset}/test/processed/data_{i}.pt")
         print(f"- loaded file {i} for test")
     loader = DataLoader(data_test, batch_size=args.batch_size, shuffle=True)
