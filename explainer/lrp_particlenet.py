@@ -10,7 +10,6 @@ from torch_geometric.nn.conv import MessagePassing
 from torch_scatter import scatter
 from torch.nn import Linear
 from torch import Tensor
-import jetnet
 from torch_geometric.loader import DataLoader
 from torch_geometric.data import Data, DataListLoader, Batch
 from typing import Callable, Optional, Union
