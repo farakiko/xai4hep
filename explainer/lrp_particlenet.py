@@ -104,12 +104,15 @@ class LRP_ParticleNet():
 
         # run LRP
         R_scores = self.redistribute_across_fc_layer(R_scores, 'fc2', neuron_to_explain)
+        print('1', R_scores.device)
         print(f"R_scores after 'fc2' layer: {round(R_scores.sum().item(),4)}")
 
         R_scores = self.redistribute_across_fc_layer(R_scores, 'fc1')
+        print('2', R_scores.device)
         print(f"R_scores after 'fc1' layer: {round(R_scores.sum().item(),4)}")
 
         R_scores = self.redistribute_across_global_pooling(R_scores)
+        print('3', R_scores.device)
         print(f'R_scores after global_pooling {round(R_scores.sum().item(),4)}')
 
         # run LRP over EdgeConv blocks
@@ -147,10 +150,13 @@ class LRP_ParticleNet():
         R_scores = R_scores[:, :self.model.kernel_sizes[idx + 1]]
 
         R_edges = self.redistribute_across_edge_pooling(R_scores, idx)
+        print('4', R_edges.device)
 
         R_scores = self.redistribute_across_DNN(R_edges, idx)
+        print('5', R_scores.device)
 
         R_scores = self.redistribute_concat_step(R_scores, idx)
+        print('6', R_scores.device)
 
         return R_scores + self.skip_connection_R_scores, R_edges
 
