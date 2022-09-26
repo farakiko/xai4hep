@@ -202,7 +202,7 @@ class LRP_ParticleNet():
 
         latent_dim = R_old.shape[1]
 
-        R_new = torch.ones([self.num_nodes * self.num_neighbors, latent_dim])
+        R_new = torch.ones([self.num_nodes * self.num_neighbors, latent_dim]).to(self.device)
 
         # loop over nodes
         for i in range(self.num_nodes):
