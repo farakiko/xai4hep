@@ -36,7 +36,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--outpath", type=str, default='./binder/', help="path to the trained model directory")
 parser.add_argument("--model_prefix", type=str, default="ParticleNet_3", help="Which model to load")
 parser.add_argument("--dataset", type=str, default='./data/toptagging/', help="path to datafile")
-parser.add_argument("--epoch", type=int, default=-1, help="which epoch to run Rscores on")
+parser.add_argument("--model", type=int, default=-1, help="model to run Rscores for... -1=trained, x=untrained # x")
 
 args = parser.parse_args()
 
@@ -61,7 +61,7 @@ def save_time_in_json(outpath, tf, ti, mode):
 if __name__ == "__main__":
     """
     e.g. to run on prp
-    python -u scaling_lrp_particlenet.py --outpath='/xai4hepvol/' --dataset='/xai4hepvol/toptagging/' --epoch=-1
+    python -u scaling_lrp_particlenet.py --outpath='/xai4hepvol/' --dataset='/xai4hepvol/toptagging/' --model=-1
 
     """
 
@@ -91,11 +91,11 @@ if __name__ == "__main__":
     with open(f"{outpath}/model_kwargs.pkl", "rb") as f:
         model_kwargs = pkl.load(f)
 
-    if args.epoch == -1:
+    if args.model == -1:
         state_dict = torch.load(f"{outpath}/weights/best_epoch_weights.pth", map_location=device)
     else:
         state_dict = torch.load(
-            f"{outpath}/weights/before_training_weights_{args.epoch}.pth", map_location=device)
+            f"{outpath}/weights/before_training_weights_{args.model}.pth", map_location=device)
 
     model = ParticleNet(**model_kwargs)
     model.load_state_dict(state_dict)
@@ -142,10 +142,10 @@ if __name__ == "__main__":
     save_time_in_json(outpath, tf, ti, 'minutes')
     save_time_in_json(outpath, tf, ti, 'hours')
 
-    if args.epoch == -1:
+    if args.model == -1:
         PATH = f'{outpath}/Rscores_best/'
     else:
-        PATH = f'{outpath}/Rscores_{args.epoch}/'
+        PATH = f'{outpath}/Rscores_{args.model}/'
     if not os.path.exists(PATH):
         os.makedirs(PATH)
 
