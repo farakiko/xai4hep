@@ -171,16 +171,16 @@ def training_loop(
         # training step
         model.train()
 
-        if epoch <= 8:
-            lr = (3 + 3.375 * epoch) * 1e-4
-        elif epoch <= 16:
-            lr = 3e-3 - (3.375 * (epoch - 8)) * 1e-4
-        elif epoch <= 20:
-            lr = 3e-4 - (0.7487 * (epoch - 16)) * 1e-4
-        elif epoch <= 24:
-            lr = 5e-7
+        # if epoch <= 8:
+        #     lr = (3 + 3.375 * epoch) * 1e-4
+        # elif epoch <= 16:
+        #     lr = 3e-3 - (3.375 * (epoch - 8)) * 1e-4
+        # elif epoch <= 20:
+        #     lr = 3e-4 - (0.7487 * (epoch - 16)) * 1e-4
+        # elif epoch <= 24:
+        #     lr = 5e-7
 
-        optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-4)
+        optimizer = torch.optim.Adam(model.parameters(), lr=3e-3, weight_decay=1e-4)
 
         losses = train(
             rank, model, train_loader, valid_loader, batch_size, optimizer, num_classes, outpath
