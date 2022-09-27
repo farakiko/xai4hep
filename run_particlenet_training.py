@@ -70,6 +70,7 @@ parser.add_argument("--batch_size", type=int, default=100)
 parser.add_argument("--patience", type=int, default=20, help="patience before early stopping")
 parser.add_argument("--lr", type=float, default=3e-4, help="learning rate")
 parser.add_argument("--nearest", type=int, default=16, help="k nearest neighbors in gravnet layer")
+parser.add_argument("--depth", type=int, default=3, help="depth of DNN in each EdgeConv block")
 
 args = parser.parse_args()
 
@@ -220,12 +221,13 @@ if __name__ == "__main__":
         "node_feat_size": num_features,
         "num_classes": num_classes,
         "k": args.nearest,
+        "depth": args.depth
     }
 
     model = ParticleNet(**model_kwargs)
 
     # save model_kwargs and hyperparameters
-    save_model(args, args.model_prefix, outpath, model_kwargs, model.kernel_sizes, model.fc_size, model.dropout)
+    save_model(args, args.model_prefix, outpath, model_kwargs, model.kernel_sizes, model.fc_size, model.dropout, args.depth)
 
     # save the weights before training for lrp comparisons
     try:

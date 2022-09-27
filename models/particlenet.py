@@ -67,7 +67,7 @@ class EdgeConv_lrp(MessagePassing):
 
 
 class EdgeConvBlock(nn.Module):
-    def __init__(self, in_size, layer_size):
+    def __init__(self, in_size, layer_size, depth):
         super(EdgeConvBlock, self).__init__()
 
         layers = []
@@ -76,7 +76,7 @@ class EdgeConvBlock(nn.Module):
         layers.append(nn.BatchNorm1d(layer_size))
         layers.append(nn.ReLU())
 
-        for i in range(3):
+        for i in range(depth):
             layers.append(nn.Linear(layer_size, layer_size))
             layers.append(nn.BatchNorm1d(layer_size))
             layers.append(nn.ReLU())
@@ -88,7 +88,7 @@ class EdgeConvBlock(nn.Module):
 
 
 class ParticleNet(nn.Module):
-    def __init__(self, node_feat_size, num_classes=5, k=3):
+    def __init__(self, node_feat_size, num_classes=5, k=3, depth=3):
         super(ParticleNet, self).__init__()
         self.node_feat_size = node_feat_size
         self.num_classes = num_classes
@@ -107,12 +107,10 @@ class ParticleNet(nn.Module):
         # define the edgeconvblocks
         self.edge_conv_blocks = nn.ModuleList()
         for i in range(0, self.num_edge_conv_blocks):
-            self.edge_conv_blocks.append(EdgeConvBlock(self.input_sizes[i], self.kernel_sizes[i + 1]))
-            # self.edge_conv_blocks.append(EdgeConvBlock(self.kernel_sizes[i], self.kernel_sizes[i + 1]))  # if no skip
+            self.edge_conv_blocks.append(EdgeConvBlock(self.input_sizes[i], self.kernel_sizes[i + 1], depth=depth))
 
         # define the fully connected networks (post-edgeconvs)
         self.fc1 = nn.Linear(self.input_sizes[-1], self.fc_size)
-        # self.fc1 = nn.Linear(self.kernel_sizes[-1], self.fc_size)  # if no skip
         self.fc2 = nn.Linear(self.fc_size, self.num_classes)
 
     def forward(self, batch, relu_activations=False):
@@ -130,7 +128,6 @@ class ParticleNet(nn.Module):
             out, edge_activations[f"edge_conv_{i}"] = self.edge_conv_blocks[i](x, edge_index[f"edge_conv_{i}"])
 
             x = torch.cat((out, x), dim=1)  # concatenating with latent features i.e. skip connections per EdgeConvBlock
-            # x = out  # if no skip
 
             edge_block_activations[f"edge_conv_{i}"] = x
 
