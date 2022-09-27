@@ -1,29 +1,5 @@
-from torch_geometric.typing import Adj, OptTensor, PairOptTensor, PairTensor
 import numpy as np
-from torch_cluster import knn_graph
-from torch_geometric.nn import EdgeConv, global_mean_pool
-from torch import nn
-from torch_geometric.typing import OptTensor, PairTensor, PairOptTensor
-from typing import Optional, Union
-from torch_geometric.utils import to_dense_adj
-from torch_geometric.nn.conv import MessagePassing
-from torch_scatter import scatter
-from torch.nn import Linear
-from torch import Tensor
-from torch_geometric.loader import DataLoader
-from torch_geometric.data import Data, DataListLoader, Batch
-from typing import Callable, Optional, Union
-import pickle as pkl
-import os.path as osp
-import os
-import sys
-from glob import glob
-
 import torch
-
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.nn import Sequential as Seq, Linear as Lin, ReLU
 
 
 class LRP_ParticleNet():
@@ -97,8 +73,6 @@ class LRP_ParticleNet():
             self.activations[key] = value.detach().to(self.device)
 
         # initialize the R_scores vector using the output predictions
-        # R_scores = preds[:, neuron_to_explain].detach().reshape(-1, 1).to(self.device)
-        print(preds.shape)
         R_scores = preds.detach().to(self.device)
         print(f'Sum of R_scores of the output: {round(R_scores.sum().item(),4)}')
 
@@ -200,6 +174,7 @@ class LRP_ParticleNet():
         for i in range(self.num_nodes):
             # loop over neighbors
             for j in range(self.num_neighbors):
+
                 # summing the edge_activations node_i (i.e. the edge_activations of the neighboring nodes)
                 deno = self.edge_activations[f'edge_conv_{idx}'][(
                     i * self.num_neighbors):(i * self.num_neighbors) + self.num_neighbors].sum(axis=0)
@@ -261,8 +236,7 @@ class LRP_ParticleNet():
 
             layer = self.name2layer(name)
             W = layer.weight.detach()  # get weight matrix
-            # sanity check of forward pass: (torch.matmul(x, W) + layer.bias) == layer(x)
-            W = torch.transpose(W, 0, 1)
+            W = torch.transpose(W, 0, 1)    # sanity check of forward pass: (torch.matmul(x, W) + layer.bias) == layer(x)
 
             # (1) compute the denominator
             denominator = torch.matmul(self.activations[name], W) + self.epsilon
@@ -288,12 +262,7 @@ class LRP_ParticleNet():
         layer = self.name2layer(layer_name)
 
         W = layer.weight.detach()  # get weight matrix
-        # sanity check of forward pass: (torch.matmul(x, W) + layer.bias) == layer(x)
-        W = torch.transpose(W, 0, 1)
-
-        # # for the output layer, pick the part of the weight matrix connecting only to the neuron you're attempting to explain
-        # if neuron_to_explain != None:
-        #     W = W[:, neuron_to_explain].reshape(-1, 1)
+        W = torch.transpose(W, 0, 1)    # sanity check of forward pass: (torch.matmul(x, W) + layer.bias) == layer(x)
 
         # (1) compute the denominator
         denominator = torch.matmul(self.activations[layer_name], W) + self.epsilon

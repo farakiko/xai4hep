@@ -37,7 +37,6 @@ parser.add_argument("--outpath", type=str, default='./binder/', help="path to th
 parser.add_argument("--model_prefix", type=str, default="ParticleNet_3", help="Which model to load")
 parser.add_argument("--dataset", type=str, default='./data/toptagging/', help="path to datafile")
 parser.add_argument("--epoch", type=int, default=-1, help="which epoch to run Rscores on")
-parser.add_argument("--batch_size", type=int, default=1)
 
 args = parser.parse_args()
 
@@ -85,7 +84,7 @@ if __name__ == "__main__":
     #     print(f"- loaded file {i} for test")
     # loader = DataLoader(data_test, batch_size=1, shuffle=True)
 
-    loader = DataLoader(torch.load(f"{args.dataset}/test/small/data_0.pt"), batch_size=args.batch_size, shuffle=True)
+    loader = DataLoader(torch.load(f"{args.dataset}/test/small/data_0.pt"), batch_size=1, shuffle=True)
     print(f"- loaded file 100 jets for testing")
 
     # load a pretrained model and update the outpath
