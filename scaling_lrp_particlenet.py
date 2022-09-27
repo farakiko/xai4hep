@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
     outpath = osp.join(args.outpath, args.model_prefix)
 
-    # quick test
+    # load the testing data
     print('Loading testing datafiles...')
     data_test = []
     for i in range(4):
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     # loader = DataLoader(torch.load(f"{args.dataset}/test/small/data_0.pt"), batch_size=1, shuffle=True)
     # print(f"- loaded file 100 jets for testing")
 
-    # load a pretrained model and update the outpath
+    # load a pretrained model
     with open(f"{outpath}/model_kwargs.pkl", "rb") as f:
         model_kwargs = pkl.load(f)
 
@@ -103,21 +103,32 @@ if __name__ == "__main__":
     model.to(device)
     print(model)
 
-    # run lrp
+    # make directory to hold the Rscores
+    if args.model == -1:
+        PATH = f'{outpath}/Rscores_best/'
+    else:
+        PATH = f'{outpath}/Rscores_{args.model}/'
+    if not os.path.exists(PATH):
+        os.makedirs(PATH)
+
+    # initilize an lrp class
     lrp = LRP_ParticleNet(device=device, model=model, epsilon=1e-8)
-    batch_x_list, batch_y_list, Rscores_list, R_edges_list, edge_index_list = [], [], [], [], []
-    batch_px_list, batch_py_list, batch_pz_list, batch_E_list = [], [], [], []
+
+    # initilize placeholders
+    R_edges_list, edge_index_list = [], []
+    batch_x_list, batch_y_list = [], []  # to store the input and target for plotting purposes
+    batch_px_list, batch_py_list, batch_pz_list, batch_E_list = [], [], [], []  # to store the p4 for plotting purposes
 
     ti = time.time()
     for i, jet in enumerate(loader):
 
-        # if i == 100:
-        #     break
+        if i == 1000:
+            break
 
         print(f'Explaining jet # {i}')
         print(f'Testing lrp on: \n {jet}')
 
-        # explain jet
+        # explain a single jet
         try:
             R_edges, edge_index = lrp.explain(jet.to(device))
         except:
@@ -139,15 +150,9 @@ if __name__ == "__main__":
         print('------------------------------------------------------')
 
     tf = time.time()
-    save_time_in_json(outpath, tf, ti, 'minutes')
-    save_time_in_json(outpath, tf, ti, 'hours')
 
-    if args.model == -1:
-        PATH = f'{outpath}/Rscores_best/'
-    else:
-        PATH = f'{outpath}/Rscores_{args.model}/'
-    if not os.path.exists(PATH):
-        os.makedirs(PATH)
+    save_time_in_json(PATH, tf, ti, 'minutes')
+    save_time_in_json(PATH, tf, ti, 'hours')
 
     # store the Rscores in the binder folder for further notebook plotting
     with open(f'{PATH}/batch_x.pkl', 'wb') as handle:
