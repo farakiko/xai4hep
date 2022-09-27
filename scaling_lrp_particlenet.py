@@ -61,7 +61,7 @@ def save_time_in_json(outpath, tf, ti, mode):
 if __name__ == "__main__":
     """
     e.g. to run on prp
-    python -u scaling_lrp_particlenet.py --epoch=-1 --model='ParticleNet_3' --outpath='/xai4hepvol/' --dataset='/xai4hepvol/toptagging/'
+    python -u scaling_lrp_particlenet.py --outpath='/xai4hepvol/' --dataset='/xai4hepvol/toptagging/' --epoch=-1
 
     """
 
@@ -78,14 +78,14 @@ if __name__ == "__main__":
 
     # quick test
     print('Loading testing datafiles...')
-    # data_test = []
-    # for i in range(1):
-    #     data_test = data_test + torch.load(f"{args.dataset}/test/processed/data_{i}.pt")
-    #     print(f"- loaded file {i} for test")
-    # loader = DataLoader(data_test, batch_size=1, shuffle=True)
+    data_test = []
+    for i in range(4):
+        data_test = data_test + torch.load(f"{args.dataset}/test/processed/data_{i}.pt")
+        print(f"- loaded file {i} for test")
+    loader = DataLoader(data_test, batch_size=1, shuffle=True)
 
-    loader = DataLoader(torch.load(f"{args.dataset}/test/small/data_0.pt"), batch_size=1, shuffle=True)
-    print(f"- loaded file 100 jets for testing")
+    # loader = DataLoader(torch.load(f"{args.dataset}/test/small/data_0.pt"), batch_size=1, shuffle=True)
+    # print(f"- loaded file 100 jets for testing")
 
     # load a pretrained model and update the outpath
     with open(f"{outpath}/model_kwargs.pkl", "rb") as f:
@@ -111,18 +111,18 @@ if __name__ == "__main__":
     ti = time.time()
     for i, jet in enumerate(loader):
 
-        if i == 100:
-            break
+        # if i == 100:
+        #     break
 
         print(f'Explaining jet # {i}')
         print(f'Testing lrp on: \n {jet}')
 
         # explain jet
-        # try:
-        R_edges, edge_index = lrp.explain(jet.to(device))
-        # except:
-        #     print("jet is not processed correctly so skipping it")
-        #     continue
+        try:
+            R_edges, edge_index = lrp.explain(jet.to(device))
+        except:
+            print("jet is not processed correctly so skipping it")
+            continue
 
         batch_x_list.append(jet.x.detach().cpu())
         batch_y_list.append(jet.y.detach().cpu())
