@@ -43,14 +43,13 @@ class LRP_ParticleNet():
     explanation functions
     """
 
-    def explain(self, input, neuron_to_explain):
+    def explain(self, input):
         """
         Primary function to call on an LRP instance to start explaining predictions.
         It registers hooks and runs a forward pass on the input, then it attempts to explain the whole model by looping over EdgeConv blocks.
 
         Args:
             input: tensor containing the input sample you wish to explain
-            neuron_to_explain: the index for a particular neuron in the output layer you wish to explain
 
         Returns:
             R_scores: a vector containing the relevance scores of the input features
@@ -98,11 +97,13 @@ class LRP_ParticleNet():
             self.activations[key] = value.detach().to(self.device)
 
         # initialize the R_scores vector using the output predictions
-        R_scores = preds[:, neuron_to_explain].reshape(-1, 1).detach().to(self.device)
+        # R_scores = preds[:, neuron_to_explain].detach().reshape(-1, 1).to(self.device)
+        print(preds.shape)
+        R_scores = preds.detach().to(self.device)
         print(f'Sum of R_scores of the output: {round(R_scores.sum().item(),4)}')
 
         # run LRP
-        R_scores = self.redistribute_across_fc_layer(R_scores, 'fc2', neuron_to_explain)
+        R_scores = self.redistribute_across_fc_layer(R_scores, 'fc2')
         print(f"R_scores after 'fc2' layer: {round(R_scores.sum().item(),4)}")
 
         R_scores = self.redistribute_across_fc_layer(R_scores, 'fc1')
@@ -274,7 +275,7 @@ class LRP_ParticleNet():
 
         return R_scores
 
-    def redistribute_across_fc_layer(self, R_scores, layer_name, neuron_to_explain=None):
+    def redistribute_across_fc_layer(self, R_scores, layer_name):
         """
         Implements the lrp-epsilon rule presented in the following reference: https://doi.org/10.1007/978-3-030-28954-6_10.
         Follows simple DNN LRP redistribution over a single FC layer.
@@ -290,9 +291,9 @@ class LRP_ParticleNet():
         # sanity check of forward pass: (torch.matmul(x, W) + layer.bias) == layer(x)
         W = torch.transpose(W, 0, 1)
 
-        # for the output layer, pick the part of the weight matrix connecting only to the neuron you're attempting to explain
-        if neuron_to_explain != None:
-            W = W[:, neuron_to_explain].reshape(-1, 1)
+        # # for the output layer, pick the part of the weight matrix connecting only to the neuron you're attempting to explain
+        # if neuron_to_explain != None:
+        #     W = W[:, neuron_to_explain].reshape(-1, 1)
 
         # (1) compute the denominator
         denominator = torch.matmul(self.activations[layer_name], W) + self.epsilon

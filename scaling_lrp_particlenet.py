@@ -120,7 +120,7 @@ if __name__ == "__main__":
 
         # explain jet
         # try:
-        R_edges, edge_index = lrp.explain(jet.to(device), neuron_to_explain=0)
+        R_edges, edge_index = lrp.explain(jet.to(device))
         # except:
         #     print("jet is not processed correctly so skipping it")
         #     continue
