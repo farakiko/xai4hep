@@ -108,7 +108,7 @@ if __name__ == "__main__":
     ti = time.time()
     for i, jet in enumerate(loader):
 
-        if i == 10:
+        if i == 100:
             break
 
         print(f'Explaining jet # {i}')
