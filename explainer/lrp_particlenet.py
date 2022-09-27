@@ -262,7 +262,6 @@ class LRP_ParticleNet():
             W = layer.weight.detach()  # get weight matrix
             # sanity check of forward pass: (torch.matmul(x, W) + layer.bias) == layer(x)
             W = torch.transpose(W, 0, 1)
-            print('W', W.device)
 
             # (1) compute the denominator
             denominator = torch.matmul(self.activations[name], W) + self.epsilon
