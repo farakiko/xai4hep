@@ -1,3 +1,4 @@
+import argparse
 import vector
 import fastjet
 import awkward as ak
@@ -7,29 +8,24 @@ from sklearn.preprocessing import label_binarize
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_curve, auc
 from sklearn import svm, datasets
-from tqdm.notebook import tqdm
 from itertools import cycle
 import matplotlib.colors as colors
-from networkx import draw_networkx_nodes, draw_networkx_edges
-import networkx as nx
-from torch_geometric.data import Data, Batch
-from torch_geometric.loader import DataListLoader, DataLoader
 import torch_geometric
 import torch.nn as nn
 import torch
-from models import ParticleNet
 import time
 import numpy as np
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
 import mplhep as hep
 
 import pickle as pkl
+import os.path as osp
+import os
 import sys
-sys.path.insert(0, '..')
-
+import json
+from glob import glob
 
 # this script runs lrp on a trained ParticleNet model
 
