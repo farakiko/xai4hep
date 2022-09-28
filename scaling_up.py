@@ -30,7 +30,7 @@ from glob import glob
 # this script runs lrp on a trained ParticleNet model
 
 parser = argparse.ArgumentParser()
-
+parser.add_argument("--model", type=int, default=-1, help="model to run Rscores for... -1=trained, x=untrained # x")
 parser.add_argument("--N", type=int, default=15, help="Top N edges to look at")
 
 args = parser.parse_args()
@@ -169,7 +169,10 @@ if __name__ == "__main__":
     qcd_same = np.array([0] * Top_N)
     qcd_diff = np.array([0] * Top_N)
 
-    PATH = "/xai4hepvol/ParticleNet_6/Rscores_best_10k"
+    if args.model == -1:
+        PATH = f"/xai4hepvol/ParticleNet_6/Rscores_best_10k"
+    else:
+        PATH = f"/xai4hepvol/ParticleNet_6/Rscores_{args.model}"
 
     print('Loading Rscores...')
     with open(f'{PATH}/batch_x.pkl', 'rb') as handle:
@@ -195,8 +198,12 @@ if __name__ == "__main__":
         print(f"processing jet # {i}/{Num_jets}")
         jet_label = batch_y_list[i]
 
-        R_edges = R_edges_list[i]['edge_conv_2']
-        edge_index_dic = edge_index_list[i]['edge_conv_2']
+        if args.model == -1:
+            R_edges = R_edges_list[i]['edge_conv_2']
+            edge_index_dic = edge_index_list[i]['edge_conv_2']
+        else:
+            R_edges = R_edges_list[i]
+            edge_index_dic = edge_index_list[i]
 
         px = batch_px_list[i]
         py = batch_py_list[i]
@@ -230,7 +237,13 @@ if __name__ == "__main__":
     top_fraction = top_diff / (top_same + top_diff)
     qcd_fraction = qcd_diff / (qcd_same + qcd_diff)
 
-    with open(f"/xai4hepvol/trained_top_fraction.pkl", 'wb') as f:
-        pkl.dump(top_fraction, f)
-    with open(f"/xai4hepvol/trained_qcd_fraction.pkl", 'wb') as f:
-        pkl.dump(qcd_fraction, f)
+    if args.model == -1:
+        with open(f"/xai4hepvol/top_fraction_best.pkl", 'wb') as f:
+            pkl.dump(top_fraction, f)
+        with open(f"/xai4hepvol/qcd_fraction_best.pkl", 'wb') as f:
+            pkl.dump(qcd_fraction, f)
+    else:
+        with open(f"/xai4hepvol/top_fraction_{args.model}.pkl", 'wb') as f:
+            pkl.dump(top_fraction, f)
+        with open(f"/xai4hepvol/qcd_fraction_{args.model}.pkl", 'wb') as f:
+            pkl.dump(qcd_fraction, f)
