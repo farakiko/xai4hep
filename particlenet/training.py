@@ -180,7 +180,8 @@ def training_loop(
         # elif epoch <= 24:
         #     lr = 5e-7
 
-        optimizer = torch.optim.Adam(model.parameters(), lr=3e-3, weight_decay=1e-4)
+        # optimizer = torch.optim.Adam(model.parameters(), lr=3e-3, weight_decay=1e-4)
+        optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
         losses = train(
             rank, model, train_loader, valid_loader, batch_size, optimizer, num_classes, outpath
