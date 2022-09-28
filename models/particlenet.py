@@ -88,7 +88,7 @@ class EdgeConvBlock(nn.Module):
 
 
 class ParticleNet(nn.Module):
-    def __init__(self, node_feat_size, num_classes=5, k=3, depth=1):
+    def __init__(self, node_feat_size, num_classes=1, k=16, depth=1):
         super(ParticleNet, self).__init__()
         self.node_feat_size = node_feat_size
         self.num_classes = num_classes

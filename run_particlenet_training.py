@@ -152,7 +152,7 @@ def train_ddp(rank, world_size, args, data_train, data_valid, model, num_classes
     model.train()
     ddp_model = DDP(model, device_ids=[rank])
 
-    optimizer = torch.optim.Adam(ddp_model.parameters(), lr=args.lr, weight_decay=1e-4)
+    optimizer = torch.optim.Adam(ddp_model.parameters(), lr=args.lr)
 
     training_loop(
         rank,
