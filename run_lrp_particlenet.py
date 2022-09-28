@@ -37,6 +37,7 @@ parser.add_argument("--outpath", type=str, default='./binder/', help="path to th
 parser.add_argument("--model_prefix", type=str, default="ParticleNet_6", help="Which model to load")
 parser.add_argument("--dataset", type=str, default='./data/toptagging/', help="path to datafile")
 parser.add_argument("--model", type=int, default=-1, help="model to run Rscores for... -1=trained, x=untrained # x")
+parser.add_argument("--quick", dest='quick', action='store_true')
 
 args = parser.parse_args()
 
@@ -121,6 +122,10 @@ if __name__ == "__main__":
 
     ti = time.time()
     for i, jet in enumerate(loader):
+
+        if i == 10:
+            if args.quick:
+                break
 
         if i == 10000:
             break

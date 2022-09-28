@@ -62,15 +62,16 @@ Author: Farouk Mokhtar
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--outpath", type=str, default="./experiments/", help="output folder")
-parser.add_argument("--model_prefix", type=str, default="ParticleNet_model2", help="directory to hold the model and plots")
+parser.add_argument("--model_prefix", type=str, default="ParticleNet_model", help="directory to hold the model and plots")
 parser.add_argument("--dataset", type=str, default="./data/toptagging/", help="dataset path")
 parser.add_argument("--overwrite", dest="overwrite", action="store_true", help="Overwrites the model if True")
 parser.add_argument("--n_epochs", type=int, default=3, help="number of training epochs")
 parser.add_argument("--batch_size", type=int, default=100)
 parser.add_argument("--patience", type=int, default=20, help="patience before early stopping")
-parser.add_argument("--lr", type=float, default=3e-4, help="learning rate")
+parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
 parser.add_argument("--nearest", type=int, default=16, help="k nearest neighbors in gravnet layer")
-parser.add_argument("--depth", type=int, default=3, help="depth of DNN in each EdgeConv block")
+parser.add_argument("--depth", type=int, default=1, help="depth of DNN in each EdgeConv block")
+parser.add_argument("--quick", dest='quick', action='store_true')
 
 args = parser.parse_args()
 
@@ -243,16 +244,22 @@ if __name__ == "__main__":
 
     # run the training using DDP if more than one gpu is available
     print('Loading training datafiles...')
-    data_train = []
-    for i in range(12):
-        data_train = data_train + torch.load(f"{args.dataset}/train/processed/data_{i}.pt")
-        print(f"- loaded file {i} for train")
+    if args.quick:
+        data_train = torch.load(f"{args.dataset}/train/processed/data_0.pt")[:1000]     # use only 1000 events for train
+    else:
+        data_train = []
+        for i in range(12):
+            data_train = data_train + torch.load(f"{args.dataset}/train/processed/data_{i}.pt")
+            print(f"- loaded file {i} for train")
 
     print('Loading validation datafiles...')
-    data_valid = []
-    for i in range(4):
-        data_valid = data_valid + torch.load(f"{args.dataset}/val/processed/data_{i}.pt")
-        print(f"- loaded file {i} for valid")
+    if args.quick:
+        data_valid = torch.load(f"{args.dataset}/val/processed/data_0.pt")[:300]   # use only 300 events for val
+    else:
+        data_valid = []
+        for i in range(4):
+            data_valid = data_valid + torch.load(f"{args.dataset}/val/processed/data_{i}.pt")
+            print(f"- loaded file {i} for valid")
 
     if world_size >= 2:
         run_demo(train_ddp, world_size, args, data_train, data_valid, model, num_classes, outpath)
@@ -261,10 +268,14 @@ if __name__ == "__main__":
 
     # quick test
     print('Loading testing datafiles...')
-    data_test = []
-    for i in range(4):
-        data_test = data_test + torch.load(f"{args.dataset}/val/processed/data_{i}.pt")
-        print(f"- loaded file {i} for test")
+    if args.quick:
+        data_test = torch.load(f"{args.dataset}/test/processed/data_{i}.pt")[:300]   # use only 300 events for testing
+    else:
+        data_test = []
+        for i in range(4):
+            data_test = data_test + torch.load(f"{args.dataset}/test/processed/data_{i}.pt")
+            print(f"- loaded file {i} for test")
+
     loader = DataLoader(data_test, batch_size=args.batch_size, shuffle=True)
 
     sig = nn.Sigmoid()
@@ -273,8 +284,7 @@ if __name__ == "__main__":
     y_test = None
     for i, batch in enumerate(loader):
         print(f"making prediction on sample # {i}")
-        # if i == 3:
-        #     break
+
         preds, _, _, _ = model(batch.to(device))
         preds = sig(preds).detach().cpu()
 
@@ -303,12 +313,9 @@ if __name__ == "__main__":
         lw=2,
         label=f"AUC = {round(auc(fpr, tpr)*100,2)}%",
     )
-    plt.plot([0, 1], [0, 1], color="navy", lw=2, linestyle="--")
     plt.xlim([0.0, 1.0])
-    # plt.ylim([0.0, 1])
     plt.ylabel("False Positive Rate")
     plt.xlabel("True Positive Rate")
     plt.yscale('log')
-    # plt.title("")
     plt.legend(loc="lower right")
     plt.savefig(f"{outpath}/Roc_curve.pdf")
