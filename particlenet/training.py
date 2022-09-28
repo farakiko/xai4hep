@@ -161,6 +161,8 @@ def training_loop(
     best_val_loss = 99999.9
     stale_epochs = 0
 
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+
     for epoch in range(n_epochs):
         t0 = time.time()
 
@@ -181,7 +183,6 @@ def training_loop(
         #     lr = 5e-7
 
         # optimizer = torch.optim.Adam(model.parameters(), lr=3e-3, weight_decay=1e-4)
-        optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
         losses = train(
             rank, model, train_loader, valid_loader, batch_size, optimizer, num_classes, outpath
