@@ -5,7 +5,9 @@ import pickle as pkl
 import os.path as osp
 import os
 import sys
+import json
 from glob import glob
+import time
 
 import numpy as np
 import mplhep as hep
@@ -31,17 +33,35 @@ warnings.filterwarnings("ignore")
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--outpath", type=str, default='./experiments/', help="path to the trained model directory")
-parser.add_argument("--model", type=str, default="ParticleNet_3", help="Which model to load")
-parser.add_argument("--data", type=str, default='./data/toptagging/test/processed/data_0.pt', help="path to datafile")
+parser.add_argument("--outpath", type=str, default='./binder/', help="path to the trained model directory")
+parser.add_argument("--model_prefix", type=str, default="ParticleNet_6", help="Which model to load")
+parser.add_argument("--dataset", type=str, default='./data/toptagging/', help="path to datafile")
+parser.add_argument("--model", type=int, default=-1, help="model to run Rscores for... -1=trained, x=untrained # x")
 
 args = parser.parse_args()
+
+
+def save_time_in_json(outpath, tf, ti, mode):
+    if mode == 'seconds':
+        dt = round((tf - ti), 3)
+    elif mode == 'minutes':
+        dt = round((tf - ti) / 60, 3)
+    elif mode == 'hours':
+        dt = round((tf - ti) / 3600, 3)
+
+    with open(f"{outpath}/time_{mode}.json", "w") as fp:  # dump hyperparameters
+        json.dump(
+            {
+                "time": dt,
+            },
+            fp,
+        )
 
 
 if __name__ == "__main__":
     """
     e.g. to run on prp
-    python -u run_lrp_particlenet.py --model='ParticleNet_3' --outpath='/xai4hepvol/' --data='/xai4hepvol/toptagging/test/processed/data_0.pt'
+    python -u run_lrp_particlenet.py --outpath='/xai4hepvol/' --dataset='/xai4hepvol/toptagging/' --model=-1
 
     """
 
@@ -54,16 +74,28 @@ if __name__ == "__main__":
         print('Will use cpu')
         device = torch.device('cpu')
 
-    loader = DataLoader(torch.load(f"{args.data}"), batch_size=1, shuffle=True)
-    print(len(loader))
+    outpath = osp.join(args.outpath, args.model_prefix)
 
-    # load a pretrained model and update the outpath
-    with open(f"{args.outpath}/{args.model}/model_kwargs.pkl", "rb") as f:
+    # load the testing data
+    print('Loading testing datafiles...')
+    data_test = []
+    for i in range(4):
+        data_test = data_test + torch.load(f"{args.dataset}/test/processed/data_{i}.pt")
+        print(f"- loaded file {i} for test")
+    loader = DataLoader(data_test, batch_size=1, shuffle=True)
+
+    # loader = DataLoader(torch.load(f"{args.dataset}/test/small/data_0.pt"), batch_size=1, shuffle=True)
+    # print(f"- loaded file 100 jets for testing")
+
+    # load a pretrained model
+    with open(f"{outpath}/model_kwargs.pkl", "rb") as f:
         model_kwargs = pkl.load(f)
 
-    # state_dict = torch.load(f"{args.outpath}/{args.model}/best_epoch_weights.pth", map_location=device)
-    # state_dict = torch.load(f"{args.outpath}/{args.model}/epoch_0_weights.pth", map_location=device)
-    state_dict = torch.load(f"{args.outpath}/{args.model}/weights/before_training_weights_0.pth", map_location=device)
+    if args.model == -1:
+        state_dict = torch.load(f"{outpath}/weights/best_epoch_weights.pth", map_location=device)
+    else:
+        state_dict = torch.load(
+            f"{outpath}/weights/before_training_weights_{args.model}.pth", map_location=device)
 
     model = ParticleNet(**model_kwargs)
     model.load_state_dict(state_dict)
@@ -71,48 +103,56 @@ if __name__ == "__main__":
     model.to(device)
     print(model)
 
-    # run lrp
-    lrp = LRP_ParticleNet(device='cpu', model=model, epsilon=1e-8)
-    batch_x_list, batch_y_list, Rscores_list, R_edges_list, edge_index_list = [], [], [], [], []
-    batch_px_list, batch_py_list, batch_pz_list, batch_E_list = [], [], [], []
+    # make directory to hold the Rscores
+    if args.model == -1:
+        PATH = f'{outpath}/Rscores_best/'
+    else:
+        PATH = f'{outpath}/Rscores_{args.model}/'
+    if not os.path.exists(PATH):
+        os.makedirs(PATH)
 
+    # initilize an lrp class
+    lrp = LRP_ParticleNet(device=device, model=model, epsilon=1e-8)
+
+    # initilize placeholders
+    R_edges_list, edge_index_list = [], []
+    batch_x_list, batch_y_list = [], []  # to store the input and target for plotting purposes
+    batch_px_list, batch_py_list, batch_pz_list, batch_E_list = [], [], [], []  # to store the p4 for plotting purposes
+
+    ti = time.time()
     for i, jet in enumerate(loader):
 
-        if i == 1000:
+        if i == 10000:
             break
 
         print(f'Explaining jet # {i}')
         print(f'Testing lrp on: \n {jet}')
 
-        # explain jet
+        # explain a single jet
         try:
-            R_edges, edge_index = lrp.explain(jet, neuron_to_explain=0)
+            R_edges, edge_index = lrp.explain(jet.to(device))
         except:
             print("jet is not processed correctly so skipping it")
             continue
 
-        batch_x_list.append(jet.x)
-        batch_y_list.append(jet.y)
+        batch_x_list.append(jet.x.detach().cpu())
+        batch_y_list.append(jet.y.detach().cpu())
 
         # for fast jet
-        batch_px_list.append(jet.px)
-        batch_py_list.append(jet.py)
-        batch_pz_list.append(jet.pz)
-        batch_E_list.append(jet.E)
+        batch_px_list.append(jet.px.detach().cpu())
+        batch_py_list.append(jet.py.detach().cpu())
+        batch_pz_list.append(jet.pz.detach().cpu())
+        batch_E_list.append(jet.E.detach().cpu())
 
-        # Rscores_list.append(Rscores)
         R_edges_list.append(R_edges)
         edge_index_list.append(edge_index)
 
         print('------------------------------------------------------')
-    #
-    # PATH = f'binder/{args.model}/Rscores_best/'
-    # if not os.path.exists(PATH):
-    #     os.makedirs(PATH)
 
-    PATH = f'binder/{args.model}/Rscores_0/'
-    if not os.path.exists(PATH):
-        os.makedirs(PATH)
+    tf = time.time()
+
+    save_time_in_json(PATH, tf, ti, 'minutes')
+    save_time_in_json(PATH, tf, ti, 'hours')
 
     # store the Rscores in the binder folder for further notebook plotting
     with open(f'{PATH}/batch_x.pkl', 'wb') as handle:
@@ -130,8 +170,6 @@ if __name__ == "__main__":
     with open(f'{PATH}/batch_E.pkl', 'wb') as handle:
         pkl.dump(batch_E_list, handle)
 
-    # with open(f'{PATH}/Rscores.pkl', 'wb') as handle:
-    #     pkl.dump(Rscores_list, handle)
     with open(f'{PATH}/R_edges.pkl', 'wb') as handle:
         pkl.dump(R_edges_list, handle)
     with open(f'{PATH}/edge_index.pkl', 'wb') as handle:

@@ -29,3 +29,9 @@ Running modified LRP for a trained MLPF model:
 ```bash
 python lrp_mlpf_pipeline.py --run_lrp --make_rmaps --load_model=$model_dir --load_epoch=$epoch --outpath=$path_to_model --loader=$dataloader
 ```
+
+Running modified LRP for a trained ParticleNet model:
+
+```bash
+python run_lrp_particlenet.py --outpath=$path_to_model --model_prefix=$model_name --dataset=$path_to_dataset
+```
