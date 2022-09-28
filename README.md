@@ -6,7 +6,7 @@
 
 XAI toolbox for interpreting state-of-the-art ML algorithms for high energy physics.
 
-xai4hep provides necessary implementations of explainable AI (XAI) techniques for state-of-the-art graph neural networks (GNNs) developed for various tasks at the LHC-CERN. Models include: machine-learned particle flow (MLPF), the interaction network (IN), and ParticleNet. Currently, the layerwise-relevance propagation (LRP) technique is implemented for such models, and additional XAI techniques are under development.
+xai4hep provides necessary implementation of explainable AI (XAI) techniques for state-of-the-art graph neural networks (GNNs) developed for various tasks at the CERN LHC. Current models include: machine-learned particle flow (MLPF), and ParticleNet. The layerwise-relevance propagation (LRP) technique is implemented for such models, and additional XAI techniques are under development.
 
 
 ## Setup
@@ -40,7 +40,7 @@ Get and process the dataset:
 cd particlenet/
 ./get_data.sh
 ```
-This will automatically create a `data` folder in the repository, with a `toptagging` folder that contains `train`,`val`,`test` folders.
+This will automatically create a `data` folder in the repository, with a `toptagging` folder that contains `train`,`val`,`test` folders, and will fetch the dataset.
 
 Run a quick training:
 ```bash
