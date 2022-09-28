@@ -77,15 +77,15 @@ if __name__ == "__main__":
     outpath = osp.join(args.outpath, args.model_prefix)
 
     # load the testing data
-    print('Loading testing datafiles...')
-    data_test = []
-    for i in range(4):
-        data_test = data_test + torch.load(f"{args.dataset}/test/processed/data_{i}.pt")
-        print(f"- loaded file {i} for test")
-    loader = DataLoader(data_test, batch_size=1, shuffle=True)
+    # print('Loading testing datafiles...')
+    # data_test = []
+    # for i in range(4):
+    #     data_test = data_test + torch.load(f"{args.dataset}/test/processed/data_{i}.pt")
+    #     print(f"- loaded file {i} for test")
+    # loader = DataLoader(data_test, batch_size=1, shuffle=True)
 
-    # loader = DataLoader(torch.load(f"{args.dataset}/test/small/data_0.pt"), batch_size=1, shuffle=True)
-    # print(f"- loaded file 100 jets for testing")
+    loader = DataLoader(torch.load(f"{args.dataset}/test/small/data_0.pt"), batch_size=1, shuffle=True)
+    print(f"- loaded file 100 jets for testing")
 
     # load a pretrained model
     with open(f"{outpath}/model_kwargs.pkl", "rb") as f:
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     ti = time.time()
     for i, jet in enumerate(loader):
 
-        if i == 1000:
+        if i == 10:
             break
 
         print(f'Explaining jet # {i}')
