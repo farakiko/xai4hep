@@ -238,12 +238,12 @@ if __name__ == "__main__":
     qcd_fraction = qcd_diff / (qcd_same + qcd_diff)
 
     if args.model == -1:
-        with open(f"/xai4hepvol/top_fraction_best.pkl", 'wb') as f:
+        with open(f"/{PATH}/top_fraction_best.pkl", 'wb') as f:
             pkl.dump(top_fraction, f)
-        with open(f"/xai4hepvol/qcd_fraction_best.pkl", 'wb') as f:
+        with open(f"/{PATH}/qcd_fraction_best.pkl", 'wb') as f:
             pkl.dump(qcd_fraction, f)
     else:
-        with open(f"/xai4hepvol/top_fraction_{args.model}.pkl", 'wb') as f:
+        with open(f"/{PATH}/top_fraction_{args.model}.pkl", 'wb') as f:
             pkl.dump(top_fraction, f)
-        with open(f"/xai4hepvol/qcd_fraction_{args.model}.pkl", 'wb') as f:
+        with open(f"/{PATH}/qcd_fraction_{args.model}.pkl", 'wb') as f:
             pkl.dump(qcd_fraction, f)
