@@ -65,6 +65,7 @@ parser.add_argument("--outpath", type=str, default="./experiments/", help="outpu
 parser.add_argument("--model_prefix", type=str, default="ParticleNet_6", help="directory to hold the model and plots")
 parser.add_argument("--dataset", type=str, default="./data/toptagging/", help="dataset path")
 parser.add_argument("--batch_size", type=int, default=100)
+parser.add_argument("--wow", dest='wow', action='store_true')
 
 args = parser.parse_args()
 
@@ -90,6 +91,10 @@ if __name__ == "__main__":
     model = ParticleNet(**model_kwargs)
     model.load_state_dict(state_dict)
     model.to(device)
+    model.eval()
+
+    if not args.wow:
+        model.train()
 
     print(model)
 
