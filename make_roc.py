@@ -91,6 +91,8 @@ if __name__ == "__main__":
     model.load_state_dict(state_dict)
     model.to(device)
 
+    print(model)
+
     # quick test
     print('Loading testing datafiles...')
     data_test = []
