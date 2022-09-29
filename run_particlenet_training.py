@@ -267,6 +267,16 @@ if __name__ == "__main__":
         train(device, world_size, args, data_train, data_valid, model, num_classes, outpath)
 
     # quick test
+    # load the best trained model
+    with open(f"{outpath}/model_kwargs.pkl", "rb") as f:
+        model_kwargs = pkl.load(f)
+
+    state_dict = torch.load(f"{outpath}/best_epoch_weights.pth", map_location=device)
+
+    model = ParticleNet(**model_kwargs)
+    model.load_state_dict(state_dict)
+    model.to(device)
+
     print('Loading testing datafiles...')
     if args.quick:
         data_test = torch.load(f"{args.dataset}/test/processed/data_{i}.pt")[:300]   # use only 300 events for testing
