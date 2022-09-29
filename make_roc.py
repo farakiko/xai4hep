@@ -93,7 +93,7 @@ if __name__ == "__main__":
     model.to(device)
     model.eval()
 
-    if not args.wow:
+    if args.wow:
         model.train()
 
     print(model)
