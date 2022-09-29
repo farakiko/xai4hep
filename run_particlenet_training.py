@@ -276,6 +276,7 @@ if __name__ == "__main__":
     model = ParticleNet(**model_kwargs)
     model.load_state_dict(state_dict)
     model.to(device)
+    model.eval()
 
     print('Loading testing datafiles...')
     if args.quick:
