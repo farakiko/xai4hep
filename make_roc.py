@@ -130,6 +130,13 @@ if __name__ == "__main__":
     torch.save(y_score, f"{outpath}/y_score.pt")
 
     # Compute ROC curve and ROC area for each class
+
+    from matplotlib.font_manager import FontProperties
+
+    font = FontProperties()
+    font.set_name('Times New Roman')
+    plt.rcParams.update({'font.family': 'serif'})
+
     print("making the Roc curves")
     fpr, tpr, _ = roc_curve(y_test.cpu(), y_score.cpu())
     roc_auc = auc(fpr, tpr)
@@ -143,8 +150,8 @@ if __name__ == "__main__":
         label=f"AUC = {round(auc(fpr, tpr)*100,2)}%",
     )
     plt.xlim([0.0, 1.0])
-    plt.ylabel("False Positive Rate")
-    plt.xlabel("True Positive Rate")
+    plt.ylabel("False Positive Rate", fontsize=25)
+    plt.xlabel("True Positive Rate", fontsize=25)
     plt.yscale('log')
-    plt.legend(loc="lower right")
-    plt.savefig(f"{outpath}/Roc_curve_{args.batch_size}.pdf")
+    plt.legend(loc="lower right", fontsize=25)
+    plt.savefig(f"{outpath}/Roc_curve.pdf")
