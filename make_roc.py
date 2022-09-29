@@ -142,4 +142,4 @@ if __name__ == "__main__":
     plt.xlabel("True Positive Rate")
     plt.yscale('log')
     plt.legend(loc="lower right")
-    plt.savefig(f"{outpath}/Roc_curve2.pdf")
+    plt.savefig(f"{outpath}/Roc_curve_{args.batch_size}.pdf")
