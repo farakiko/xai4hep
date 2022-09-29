@@ -62,7 +62,7 @@ Author: Farouk Mokhtar
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--outpath", type=str, default="./experiments/", help="output folder")
-parser.add_argument("--model_prefix", type=str, default="ParticleNet_9", help="directory to hold the model and plots")
+parser.add_argument("--model_prefix", type=str, default="ParticleNet_6", help="directory to hold the model and plots")
 parser.add_argument("--dataset", type=str, default="./data/toptagging/", help="dataset path")
 parser.add_argument("--batch_size", type=int, default=100)
 
@@ -142,4 +142,4 @@ if __name__ == "__main__":
     plt.xlabel("True Positive Rate")
     plt.yscale('log')
     plt.legend(loc="lower right")
-    plt.savefig(f"{outpath}/Roc_curve.pdf")
+    plt.savefig(f"{outpath}/Roc_curve2.pdf")
