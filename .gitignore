@@ -21,3 +21,8 @@ train_loader_mlpf.pth
 
 *playground.py
 junk/
+
+binder/ParticleNet_6
+binder/ParticleNet
+
+scaling_up.py

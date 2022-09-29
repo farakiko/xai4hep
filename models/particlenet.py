@@ -1,9 +1,16 @@
+from torch_geometric.data import Data, Dataset
+import time
+import matplotlib.pyplot as plt
+import matplotlib
+import torch_geometric
+from torch_geometric.loader import DataListLoader, DataLoader
+import pandas as pd
+import h5py
 from torch_geometric.typing import Adj, OptTensor, PairOptTensor, PairTensor
 from typing import Callable, Optional, Union
 from torch_geometric.data import Data, DataListLoader, Batch
 from torch_geometric.loader import DataLoader
 
-import jetnet
 import pickle as pkl
 import os.path as osp
 import os
@@ -38,7 +45,7 @@ class EdgeConv_lrp(MessagePassing):
     2. retrieve edge_activations
     """
 
-    def __init__(self, nn: Callable, aggr: str = 'max', **kwargs):
+    def __init__(self, nn: Callable, aggr: str = "max", **kwargs):
         super().__init__(aggr=aggr, **kwargs)
         self.nn = nn
 
@@ -56,11 +63,11 @@ class EdgeConv_lrp(MessagePassing):
         return self.nn(torch.cat([x_i, x_j], dim=-1))
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}(nn={self.nn})'
+        return f"{self.__class__.__name__}(nn={self.nn})"
 
 
 class EdgeConvBlock(nn.Module):
-    def __init__(self, in_size, layer_size):
+    def __init__(self, in_size, layer_size, depth):
         super(EdgeConvBlock, self).__init__()
 
         layers = []
@@ -69,7 +76,7 @@ class EdgeConvBlock(nn.Module):
         layers.append(nn.BatchNorm1d(layer_size))
         layers.append(nn.ReLU())
 
-        for i in range(1):
+        for i in range(depth):
             layers.append(nn.Linear(layer_size, layer_size))
             layers.append(nn.BatchNorm1d(layer_size))
             layers.append(nn.ReLU())
@@ -81,23 +88,26 @@ class EdgeConvBlock(nn.Module):
 
 
 class ParticleNet(nn.Module):
-    def __init__(self, node_feat_size, num_classes=5, k=3):
+    def __init__(self, node_feat_size, num_classes=1, k=16, depth=1):
         super(ParticleNet, self).__init__()
         self.node_feat_size = node_feat_size
         self.num_classes = num_classes
 
         self.k = k
         self.num_edge_conv_blocks = 3
+
         self.kernel_sizes = [self.node_feat_size, 64, 128, 256]
-        self.input_sizes = np.cumsum(self.kernel_sizes)     # [4, 4+64, 4+64+128, 4+64+128+256]
+        self.input_sizes = np.cumsum(self.kernel_sizes)  # [4, 4+64, 4+64+128, 4+64+128+256]
+
         self.fc_size = 256
-        # self.dropout = 0.1
-        # self.dropout_layer = nn.Dropout(p=self.dropout)
+
+        self.dropout = 0.1
+        self.dropout_layer = nn.Dropout(p=self.dropout)
 
         # define the edgeconvblocks
         self.edge_conv_blocks = nn.ModuleList()
         for i in range(0, self.num_edge_conv_blocks):
-            self.edge_conv_blocks.append(EdgeConvBlock(self.input_sizes[i], self.kernel_sizes[i + 1]))
+            self.edge_conv_blocks.append(EdgeConvBlock(self.input_sizes[i], self.kernel_sizes[i + 1], depth=depth))
 
         # define the fully connected networks (post-edgeconvs)
         self.fc1 = nn.Linear(self.input_sizes[-1], self.fc_size)
@@ -113,46 +123,45 @@ class ParticleNet(nn.Module):
         for i in range(self.num_edge_conv_blocks):
 
             # using only angular coords for knn in first edgeconv block
-            edge_index[f'edge_conv_{i}'] = (
-                knn_graph(x[:, :2], self.k, batch) if i == 0 else knn_graph(x, self.k, batch)
-            )
+            edge_index[f"edge_conv_{i}"] = knn_graph(x[:, :2], self.k, batch) if i == 0 else knn_graph(x, self.k, batch)
 
-            out, edge_activations[f'edge_conv_{i}'] = self.edge_conv_blocks[i](x, edge_index[f'edge_conv_{i}'])
+            out, edge_activations[f"edge_conv_{i}"] = self.edge_conv_blocks[i](x, edge_index[f"edge_conv_{i}"])
 
-            x = torch.cat(
-                (out, x), dim=1
-            )  # concatenating with latent features i.e. skip connections per EdgeConvBlock
+            x = torch.cat((out, x), dim=1)  # concatenating with latent features i.e. skip connections per EdgeConvBlock
 
-            edge_block_activations[f'edge_conv_{i}'] = x
+            edge_block_activations[f"edge_conv_{i}"] = x
 
         x = global_mean_pool(x, batch)
 
         x = self.fc1(x)
-        # x = self.dropout_layer(F.relu(x))
+        x = self.dropout_layer(F.relu(x))
         x = self.fc2(x)
 
-        return x, edge_activations, edge_block_activations, edge_index  # no softmax because pytorch cross entropy loss includes softmax
+        # no softmax because pytorch cross entropy loss includes softmax
+        return x, edge_activations, edge_block_activations, edge_index
 
-
-# # test to instantiate a model and run a forward pass and save the model
-# device = 'cpu'
 #
 # # get sample dataset
-# dataset = jetnet.datasets.JetNet(jet_type='g')
+# dataset = jetnet.datasets.JetNet(jet_type="g")
 #
 # # load the dataset in a convenient pyg format
-# dataset_pyg = []
-# for data in dataset:
-#     d = Data(x=data[0], y=data[1])
-#     dataset_pyg.append(d)
-#
-# loader = DataLoader(dataset_pyg, batch_size=1, shuffle=False)
+# print('Loading training datafiles...')
+# loader = DataLoader(torch.load(f"../data/toptagging/test/processed/data_{0}.pt"), batch_size=1, shuffle=True)
 #
 # for batch in loader:
 #     break
 #
-# model = ParticleNet(node_feat_size=4)
+# model_kwargs = {
+#     "node_feat_size": 7,
+#     "num_classes": 1,
+#     "k": 12,
+# }
 #
+# model = ParticleNet(**model_kwargs)
+#
+# _, _, _, edge_index = model(batch)
+#
+
 # try:
 #     state_dict = model.module.state_dict()
 # except AttributeError:
