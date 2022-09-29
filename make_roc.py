@@ -135,12 +135,9 @@ if __name__ == "__main__":
         lw=2,
         label=f"AUC = {round(auc(fpr, tpr)*100,2)}%",
     )
-    plt.plot([0, 1], [0, 1], color="navy", lw=2, linestyle="--")
     plt.xlim([0.0, 1.0])
-    # plt.ylim([0.0, 1])
     plt.ylabel("False Positive Rate")
     plt.xlabel("True Positive Rate")
     plt.yscale('log')
-    # plt.title("")
     plt.legend(loc="lower right")
     plt.savefig(f"{outpath}/Roc_curve.pdf")
