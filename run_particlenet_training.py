@@ -1,46 +1,41 @@
 import argparse
+import json
+import os
+import os.path as osp
+import pickle as pkl
+import sys
+import time
+from glob import glob
+
+import h5py
+import hist as hist2
+import matplotlib
+import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
+import mplhep as hep
+import numpy as np
+import pandas as pd
+import torch
+import torch.distributed as dist
+import torch.multiprocessing as mp
+import torch.nn as nn
+import torch_geometric
+from sklearn.metrics import auc, roc_curve
+from torch.nn.parallel import DistributedDataParallel as DDP
+from torch_geometric.data import Batch, Data, DataListLoader
+from torch_geometric.loader import DataLoader
+
 from models import ParticleNet
 from particlenet import (
     TopTaggingDataset,
+    load_model,
     make_file_loaders,
     save_model,
-    load_model,
-    training_loop
+    training_loop,
 )
 
-import os
-import os.path as osp
-import sys
-from glob import glob
-import time
-
-import numpy as np
-import pandas as pd
-import h5py
-
-import torch
-import torch.nn as nn
-import torch_geometric
-from torch_geometric.data import Data, DataListLoader, Batch
-from torch_geometric.loader import DataLoader
-
-from torch.nn.parallel import DistributedDataParallel as DDP
-import torch.multiprocessing as mp
-import torch.distributed as dist
-
-from sklearn.metrics import roc_curve, auc
-
-import pickle as pkl
-import json
-
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
-import hist as hist2
-
-import mplhep as hep
 plt.style.use(hep.style.CMS)
-plt.rcParams.update({'font.size': 20})
+plt.rcParams.update({"font.size": 20})
 
 matplotlib.use("Agg")
 
@@ -61,17 +56,38 @@ Author: Farouk Mokhtar
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--outpath", type=str, default="./experiments/", help="output folder")
-parser.add_argument("--model_prefix", type=str, default="ParticleNet_model", help="directory to hold the model and plots")
-parser.add_argument("--dataset", type=str, default="./data/toptagging/", help="dataset path")
-parser.add_argument("--overwrite", dest="overwrite", action="store_true", help="Overwrites the model if True")
+parser.add_argument(
+    "--outpath", type=str, default="./experiments/", help="output folder"
+)
+parser.add_argument(
+    "--model_prefix",
+    type=str,
+    default="ParticleNet_model",
+    help="directory to hold the model and plots",
+)
+parser.add_argument(
+    "--dataset", type=str, default="./data/toptagging/", help="dataset path"
+)
+parser.add_argument(
+    "--overwrite",
+    dest="overwrite",
+    action="store_true",
+    help="Overwrites the model if True",
+)
 parser.add_argument("--n_epochs", type=int, default=3, help="number of training epochs")
 parser.add_argument("--batch_size", type=int, default=100)
-parser.add_argument("--patience", type=int, default=20, help="patience before early stopping")
+parser.add_argument(
+    "--patience", type=int, default=20, help="patience before early stopping"
+)
 parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
-parser.add_argument("--nearest", type=int, default=16, help="k nearest neighbors in gravnet layer")
-parser.add_argument("--depth", type=int, default=1, help="depth of DNN in each EdgeConv block")
-parser.add_argument("--quick", dest='quick', action='store_true')
+parser.add_argument(
+    "--nearest", type=int, default=16, help="k nearest neighbors in gravnet layer"
+)
+parser.add_argument(
+    "--depth", type=int, default=1, help="depth of DNN in each EdgeConv block"
+)
+parser.add_argument("--dropout", dest="dropout", action="store_true")
+parser.add_argument("--quick", dest="quick", action="store_true")
 
 args = parser.parse_args()
 
@@ -102,7 +118,9 @@ def cleanup():
     dist.destroy_process_group()
 
 
-def run_demo(demo_fn, world_size, args, data_train, data_valid, model, num_classes, outpath):
+def run_demo(
+    demo_fn, world_size, args, data_train, data_valid, model, num_classes, outpath
+):
     """
     Necessary function that spawns a process group of size=world_size processes to run demo_fn()
     on each gpu device that will be indexed by 'rank'.
@@ -121,7 +139,9 @@ def run_demo(demo_fn, world_size, args, data_train, data_valid, model, num_class
     )
 
 
-def train_ddp(rank, world_size, args, data_train, data_valid, model, num_classes, outpath):
+def train_ddp(
+    rank, world_size, args, data_train, data_valid, model, num_classes, outpath
+):
     """
     A train_ddp() function that will be passed as a demo_fn to run_demo() to
     perform training over multiple gpus using DDP.
@@ -135,9 +155,17 @@ def train_ddp(rank, world_size, args, data_train, data_valid, model, num_classes
 
     print(f"Running training on rank {rank}: {torch.cuda.get_device_name(rank)}")
 
-    print('Building dataloaders...')
-    data_train = data_train[int(rank * (len(data_train) / world_size)):int((rank + 1) * (len(data_train) / world_size))]
-    data_valid = data_valid[int(rank * (len(data_valid) / world_size)):int((rank + 1) * (len(data_valid) / world_size))]
+    print("Building dataloaders...")
+    data_train = data_train[
+        int(rank * (len(data_train) / world_size)) : int(
+            (rank + 1) * (len(data_train) / world_size)
+        )
+    ]
+    data_valid = data_valid[
+        int(rank * (len(data_valid) / world_size)) : int(
+            (rank + 1) * (len(data_valid) / world_size)
+        )
+    ]
 
     train_loader = DataLoader(data_train, batch_size=args.batch_size, shuffle=True)
     valid_loader = DataLoader(data_valid, batch_size=args.batch_size, shuffle=True)
@@ -170,7 +198,9 @@ def train_ddp(rank, world_size, args, data_train, data_valid, model, num_classes
     cleanup()
 
 
-def train(device, world_size, args, data_train, data_valid, model, num_classes, outpath):
+def train(
+    device, world_size, args, data_train, data_valid, model, num_classes, outpath
+):
     """
     A train() function that will load the training dataset and start a training_loop
     on a single device (cuda or cpu).
@@ -182,7 +212,7 @@ def train(device, world_size, args, data_train, data_valid, model, num_classes, 
         print(f"Running training on: {torch.cuda.get_device_name(device)}")
         device = device.index
 
-    print('Building dataloaders...')
+    print("Building dataloaders...")
     train_loader = DataLoader(data_train, batch_size=args.batch_size)
     valid_loader = DataLoader(data_valid, batch_size=args.batch_size)
 
@@ -222,13 +252,23 @@ if __name__ == "__main__":
         "node_feat_size": num_features,
         "num_classes": num_classes,
         "k": args.nearest,
-        "depth": args.depth
+        "depth": args.depth,
+        "dropout": True if args.dropout else False,
     }
 
     model = ParticleNet(**model_kwargs)
 
     # save model_kwargs and hyperparameters
-    save_model(args, args.model_prefix, outpath, model_kwargs, model.kernel_sizes, model.fc_size, model.dropout, args.depth)
+    save_model(
+        args,
+        args.model_prefix,
+        outpath,
+        model_kwargs,
+        model.kernel_sizes,
+        model.fc_size,
+        model.dropout,
+        args.depth,
+    )
 
     # save the weights before training for lrp comparisons
     try:
@@ -243,28 +283,54 @@ if __name__ == "__main__":
     print("Training over {} epochs".format(args.n_epochs))
 
     # run the training using DDP if more than one gpu is available
-    print('Loading training datafiles...')
+    print("Loading training datafiles...")
     if args.quick:
-        data_train = torch.load(f"{args.dataset}/train/processed/data_0.pt")[:1000]     # use only 1000 events for train
+        data_train = torch.load(f"{args.dataset}/train/processed/data_0.pt")[
+            :1000
+        ]  # use only 1000 events for train
     else:
         data_train = []
         for i in range(12):
-            data_train = data_train + torch.load(f"{args.dataset}/train/processed/data_{i}.pt")
+            data_train = data_train + torch.load(
+                f"{args.dataset}/train/processed/data_{i}.pt"
+            )
             print(f"- loaded file {i} for train")
 
-    print('Loading validation datafiles...')
+    print("Loading validation datafiles...")
     if args.quick:
-        data_valid = torch.load(f"{args.dataset}/val/processed/data_0.pt")[:300]   # use only 300 events for val
+        data_valid = torch.load(f"{args.dataset}/val/processed/data_0.pt")[
+            :300
+        ]  # use only 300 events for val
     else:
         data_valid = []
         for i in range(4):
-            data_valid = data_valid + torch.load(f"{args.dataset}/val/processed/data_{i}.pt")
+            data_valid = data_valid + torch.load(
+                f"{args.dataset}/val/processed/data_{i}.pt"
+            )
             print(f"- loaded file {i} for valid")
 
     if world_size >= 2:
-        run_demo(train_ddp, world_size, args, data_train, data_valid, model, num_classes, outpath)
+        run_demo(
+            train_ddp,
+            world_size,
+            args,
+            data_train,
+            data_valid,
+            model,
+            num_classes,
+            outpath,
+        )
     else:
-        train(device, world_size, args, data_train, data_valid, model, num_classes, outpath)
+        train(
+            device,
+            world_size,
+            args,
+            data_train,
+            data_valid,
+            model,
+            num_classes,
+            outpath,
+        )
 
     # quick test
     # load the best trained model
@@ -278,13 +344,17 @@ if __name__ == "__main__":
     model.to(device)
     model.eval()
 
-    print('Loading testing datafiles...')
+    print("Loading testing datafiles...")
     if args.quick:
-        data_test = torch.load(f"{args.dataset}/test/processed/data_{i}.pt")[:300]   # use only 300 events for testing
+        data_test = torch.load(f"{args.dataset}/test/processed/data_{i}.pt")[
+            :300
+        ]  # use only 300 events for testing
     else:
         data_test = []
         for i in range(4):
-            data_test = data_test + torch.load(f"{args.dataset}/test/processed/data_{i}.pt")
+            data_test = data_test + torch.load(
+                f"{args.dataset}/test/processed/data_{i}.pt"
+            )
             print(f"- loaded file {i} for test")
 
     loader = DataLoader(data_test, batch_size=args.batch_size, shuffle=True)
@@ -327,6 +397,6 @@ if __name__ == "__main__":
     plt.xlim([0.0, 1.0])
     plt.ylabel("False Positive Rate")
     plt.xlabel("True Positive Rate")
-    plt.yscale('log')
+    plt.yscale("log")
     plt.legend(loc="lower right")
     plt.savefig(f"{outpath}/Roc_curve.pdf")
