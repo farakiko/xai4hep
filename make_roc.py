@@ -1,46 +1,41 @@
 import argparse
+import json
+import os
+import os.path as osp
+import pickle as pkl
+import sys
+import time
+from glob import glob
+
+import h5py
+import hist as hist2
+import matplotlib
+import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
+import mplhep as hep
+import numpy as np
+import pandas as pd
+import torch
+import torch.distributed as dist
+import torch.multiprocessing as mp
+import torch.nn as nn
+import torch_geometric
+from sklearn.metrics import auc, roc_curve
+from torch.nn.parallel import DistributedDataParallel as DDP
+from torch_geometric.data import Batch, Data, DataListLoader
+from torch_geometric.loader import DataLoader
+
 from models import ParticleNet
 from particlenet import (
     TopTaggingDataset,
+    load_model,
     make_file_loaders,
     save_model,
-    load_model,
-    training_loop
+    training_loop,
 )
 
-import os
-import os.path as osp
-import sys
-from glob import glob
-import time
-
-import numpy as np
-import pandas as pd
-import h5py
-
-import torch
-import torch.nn as nn
-import torch_geometric
-from torch_geometric.data import Data, DataListLoader, Batch
-from torch_geometric.loader import DataLoader
-
-from torch.nn.parallel import DistributedDataParallel as DDP
-import torch.multiprocessing as mp
-import torch.distributed as dist
-
-from sklearn.metrics import roc_curve, auc
-
-import pickle as pkl
-import json
-
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
-import hist as hist2
-
-import mplhep as hep
 plt.style.use(hep.style.CMS)
-plt.rcParams.update({'font.size': 20})
+plt.rcParams.update({"font.size": 20})
 
 matplotlib.use("Agg")
 
@@ -60,9 +55,18 @@ Author: Farouk Mokhtar
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--outpath", type=str, default="./experiments/", help="output folder")
-parser.add_argument("--model_prefix", type=str, default="ParticleNet_depth2", help="directory to hold the model and plots")
-parser.add_argument("--dataset", type=str, default="./data/toptagging/", help="dataset path")
+parser.add_argument(
+    "--outpath", type=str, default="./experiments/", help="output folder"
+)
+parser.add_argument(
+    "--model_prefix",
+    type=str,
+    default="ParticleNet_depth2",
+    help="directory to hold the model and plots",
+)
+parser.add_argument(
+    "--dataset", type=str, default="./data/toptagging/", help="dataset path"
+)
 parser.add_argument("--batch_size", type=int, default=100)
 
 args = parser.parse_args()
@@ -89,10 +93,10 @@ if __name__ == "__main__":
     model = ParticleNet(**model_kwargs)
     model.load_state_dict(state_dict)
     model.to(device)
-    model.eval()
+    # model.eval()
 
     # quick test
-    print('Loading testing datafiles...')
+    print("Loading testing datafiles...")
     data_test = []
     for i in range(4):
         data_test = data_test + torch.load(f"{args.dataset}/test/processed/data_{i}.pt")
@@ -140,7 +144,7 @@ if __name__ == "__main__":
     # plt.ylim([0.0, 1])
     plt.ylabel("False Positive Rate")
     plt.xlabel("True Positive Rate")
-    plt.yscale('log')
+    plt.yscale("log")
     # plt.title("")
     plt.legend(loc="lower right")
     plt.savefig(f"{outpath}/Roc_curve.pdf")
