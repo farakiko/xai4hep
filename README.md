@@ -22,7 +22,7 @@ python run_lrp_fcn.py
 ## Explaining MLPF
 
 <p align="center">
-  <img width="900" src="https://raw.githubusercontent.com/farakiko/xai4hep/dev/docs/_static/images/mlpf_rscores.png" />
+  <img width="600" src="https://raw.githubusercontent.com/farakiko/xai4hep/dev/docs/_static/images/mlpf_rscores.png" />
 </p>
 
 - **Running modified LRP for a trained MLPF model**
@@ -33,7 +33,7 @@ python run_lrp_mlpf.py --run_lrp --make_rmaps --load_model=$model_dir --load_epo
 ## Explaining ParticleNet
 
 <p align="center">
-  <img width="300" src="https://raw.githubusercontent.com/farakiko/xai4hep/dev/docs/_static/images/particlenet_rscores.png" />
+  <img width="500" src="https://raw.githubusercontent.com/farakiko/xai4hep/dev/docs/_static/images/particlenet_rscores.png" />
 </p>
 
 
