@@ -46,6 +46,7 @@ cd particlenet/
 This will automatically create a `data/` folder under the `xai4hep/` repository, with a `toptagging/` folder that contains `train`,`val`,`test` folders; each containing a respective subset of the dataset.
 
 - **Run a quick training**
+
 From the `xai4hep/` repository run
 ```bash
 mkdir experiments/
@@ -55,6 +56,7 @@ python run_training.py --quick --model_prefix=ParticleNet_model
 This will run a quick training over a small sample of the dataset and store the model under `experiments`.
 
 - **Run a quick LRP test**
+
 From the `xai4hep/` repository run
 ```bash
 python run_lrp_particlenet.py --quick --model_prefix=ParticleNet_model
