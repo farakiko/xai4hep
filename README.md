@@ -13,7 +13,7 @@ conda activate xai
 ```
 
 ## Explaining simple FCN
-Running standard LRP for a simple fully connected network (FCN) on a toy dataset with a highly discriminatory feature:
+Running LRP to explain a simple fully connected network (FCN) trained on a toy dataset with one highly discriminatory feature:
 
 ```bash
 python run_lrp_fcn.py
@@ -25,7 +25,7 @@ python run_lrp_fcn.py
   <img width="900" src="https://raw.githubusercontent.com/farakiko/xai4hep/dev/docs/_static/images/mlpf_rscores.png" />
 </p>
 
-Running modified LRP for a trained MLPF model:
+- **Running modified LRP for a trained MLPF model**
 ```bash
 python run_lrp_mlpf.py --run_lrp --make_rmaps --load_model=$model_dir --load_epoch=$epoch --outpath=$path_to_model --loader=$dataloader
 ```
@@ -33,7 +33,7 @@ python run_lrp_mlpf.py --run_lrp --make_rmaps --load_model=$model_dir --load_epo
 ## Explaining ParticleNet
 
 <p align="center">
-  <img width="900" src="https://raw.githubusercontent.com/farakiko/xai4hep/dev/docs/_static/images/particlenet_rscores.png" />
+  <img width="700" src="https://raw.githubusercontent.com/farakiko/xai4hep/dev/docs/_static/images/particlenet_rscores.png" />
 </p>
 
 
@@ -43,9 +43,10 @@ python run_lrp_mlpf.py --run_lrp --make_rmaps --load_model=$model_dir --load_epo
 cd particlenet/
 ./get_data.sh
 ```
-This will automatically create a `data` folder in the repository, with a `toptagging` folder that contains `train`,`val`,`test` folders, and will fetch the dataset.
+This will automatically create a `data/` folder under the `xai4hep/` repository, with a `toptagging/` folder that contains `train`,`val`,`test` folders; each containing a respective subset of the dataset.
 
-- **Run a quick training:**
+- **Run a quick training**
+From the `xai4hep/` repository run
 ```bash
 mkdir experiments/
 cd particlenet
@@ -53,7 +54,8 @@ python run_training.py --quick --model_prefix=ParticleNet_model
 ```
 This will run a quick training over a small sample of the dataset and store the model under `experiments`.
 
-- **Run a quick LRP test:**
+- **Run a quick LRP test**
+From the `xai4hep/` repository run
 ```bash
 python run_lrp_particlenet.py --quick --model_prefix=ParticleNet_model
 ```
