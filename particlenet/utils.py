@@ -14,7 +14,9 @@ from torch_geometric.data.data import BaseData
 from torch_geometric.loader import DataListLoader, DataLoader
 
 
-def save_model(args, model_fname, outpath, model_kwargs, kernel_sizes, fc_size, dropout, depth):
+def save_model(
+    args, model_fname, outpath, model_kwargs, kernel_sizes, fc_size, dropout, depth
+):
 
     if not osp.isdir(outpath):
         os.makedirs(outpath)
@@ -26,7 +28,9 @@ def save_model(args, model_fname, outpath, model_kwargs, kernel_sizes, fc_size, 
 
         print(f"model {model_fname} already exists, deleting it")
 
-        filelist = [f for f in os.listdir(outpath) if not f.endswith(".txt")]  # don't remove the newly created logs.txt
+        filelist = [
+            f for f in os.listdir(outpath) if not f.endswith(".txt")
+        ]  # don't remove the newly created logs.txt
         for f in filelist:
             try:
                 os.remove(os.path.join(outpath, f))
@@ -46,7 +50,7 @@ def save_model(args, model_fname, outpath, model_kwargs, kernel_sizes, fc_size, 
                 "kernel_sizes": kernel_sizes,
                 "fc_size": fc_size,
                 "dropout": dropout,
-                "depth": depth
+                "depth": depth,
             },
             fp,
         )
@@ -98,7 +102,9 @@ class Collater:
         raise TypeError(f"DataLoader found invalid type: {type(elem)}")
 
 
-def make_file_loaders(world_size, dataset, num_files=1, num_workers=0, prefetch_factor=2):
+def make_file_loaders(
+    world_size, dataset, num_files=1, num_workers=0, prefetch_factor=2
+):
     """
     This function is only one line, but it's worth explaining why it's needed
     and what it's doing. It uses native torch Dataloaders with a custom collate_fn

@@ -1,47 +1,38 @@
-import sklearn.metrics
-import sklearn
-from torch_geometric.data import Data, Dataset
-import time
-import matplotlib.pyplot as plt
-import matplotlib
-import torch_geometric
-from torch_geometric.loader import DataListLoader, DataLoader
-import pandas as pd
-import h5py
-from torch_geometric.typing import Adj, OptTensor, PairOptTensor, PairTensor
-from typing import Callable, Optional, Union
-from torch_geometric.data import Data, DataListLoader, Batch
-from torch_geometric.loader import DataLoader
-
-import pickle as pkl
-import os.path as osp
-import os
-import sys
-from glob import glob
-
-import torch
-from torch import Tensor
-import torch.nn as nn
-from torch.nn import Linear
-from torch_scatter import scatter
-from torch_geometric.nn.conv import MessagePassing
-from torch_geometric.utils import to_dense_adj
-import torch.nn.functional as F
-
-from torch_geometric.nn import EdgeConv, global_mean_pool
-from torch_cluster import knn_graph
-
-import numpy as np
-
 import json
 import math
 import os
+import os.path as osp
+import pickle as pkl
+import sys
 import time
+from glob import glob
+from typing import Callable, Optional, Union
 
+import h5py
 import matplotlib
+import matplotlib.pyplot as plt
 import mplhep as hep
+import numpy as np
+import pandas as pd
+import sklearn
+import sklearn.metrics
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch_geometric
+from torch import Tensor
+from torch.nn import Linear
+from torch_cluster import knn_graph
+from torch_geometric.data import Batch, Data, DataListLoader, Dataset
+from torch_geometric.loader import DataListLoader, DataLoader
+from torch_geometric.nn import EdgeConv, global_mean_pool
+from torch_geometric.nn.conv import MessagePassing
+from torch_geometric.typing import Adj, OptTensor, PairOptTensor, PairTensor
+from torch_geometric.utils import to_dense_adj
+from torch_scatter import scatter
+
 plt.style.use(hep.style.CMS)
-plt.rcParams.update({'font.size': 20})
+plt.rcParams.update({"font.size": 20})
 
 matplotlib.use("Agg")
 
@@ -50,14 +41,27 @@ np.seterr(divide="ignore", invalid="ignore")
 
 
 @torch.no_grad()
-def validation_run(rank, model, train_loader, valid_loader, batch_size, num_classes, outpath):
+def validation_run(
+    rank, model, train_loader, valid_loader, batch_size, num_classes, outpath
+):
     with torch.no_grad():
         optimizer = None
-        ret = train(rank, model, train_loader, valid_loader, batch_size, optimizer, num_classes, outpath)
+        ret = train(
+            rank,
+            model,
+            train_loader,
+            valid_loader,
+            batch_size,
+            optimizer,
+            num_classes,
+            outpath,
+        )
     return ret
 
 
-def train(rank, model, train_loader, valid_loader, batch_size, optimizer, num_classes, outpath):
+def train(
+    rank, model, train_loader, valid_loader, batch_size, optimizer, num_classes, outpath
+):
     """
     A training/validation run over a given epoch that gets called in the training_loop() function.
     When optimizer is set to None, it freezes the model for a validation_run.
@@ -113,7 +117,9 @@ def train(rank, model, train_loader, valid_loader, batch_size, optimizer, num_cl
         # if i == 2:
         #     break
 
-    print(f"Average inference time per batch on rank {rank} is {round((t / len(loader)), 3)}s")
+    print(
+        f"Average inference time per batch on rank {rank} is {round((t / len(loader)), 3)}s"
+    )
 
     t0 = time.time()
 
@@ -171,7 +177,14 @@ def training_loop(
         # training step
         model.train()
         losses = train(
-            rank, model, train_loader, valid_loader, batch_size, optimizer, num_classes, outpath
+            rank,
+            model,
+            train_loader,
+            valid_loader,
+            batch_size,
+            optimizer,
+            num_classes,
+            outpath,
         )
 
         losses_train.append(losses)
@@ -238,4 +251,6 @@ def training_loop(
             pkl.dump(losses_valid, f)
 
         print("----------------------------------------------------------")
-    print(f"Done with training. Total training time on rank {rank} is {round((time.time() - t0_initial)/60,3)}min")
+    print(
+        f"Done with training. Total training time on rank {rank} is {round((time.time() - t0_initial)/60,3)}min"
+    )

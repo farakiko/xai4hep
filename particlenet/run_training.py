@@ -25,7 +25,9 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch_geometric.data import Batch, Data, DataListLoader
 from torch_geometric.loader import DataLoader
 
+sys.path.insert(0, "..")
 from models import ParticleNet
+
 from particlenet import (
     TopTaggingDataset,
     load_model,
@@ -57,7 +59,7 @@ Author: Farouk Mokhtar
 parser = argparse.ArgumentParser()
 
 parser.add_argument(
-    "--outpath", type=str, default="./experiments/", help="output folder"
+    "--outpath", type=str, default="../experiments/", help="output folder"
 )
 parser.add_argument(
     "--model_prefix",
@@ -66,7 +68,7 @@ parser.add_argument(
     help="directory to hold the model and plots",
 )
 parser.add_argument(
-    "--dataset", type=str, default="./data/toptagging/", help="dataset path"
+    "--dataset", type=str, default="../data/toptagging/", help="dataset path"
 )
 parser.add_argument(
     "--overwrite",

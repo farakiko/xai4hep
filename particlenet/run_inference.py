@@ -25,7 +25,9 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch_geometric.data import Batch, Data, DataListLoader
 from torch_geometric.loader import DataLoader
 
+sys.path.insert(0, "..")
 from models import ParticleNet
+
 from particlenet import (
     TopTaggingDataset,
     load_model,
