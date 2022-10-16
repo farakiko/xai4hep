@@ -33,7 +33,7 @@ python run_lrp_mlpf.py --run_lrp --make_rmaps --load_model=$model_dir --load_epo
 ## Explaining ParticleNet
 
 <p align="center">
-  <img width="700" src="https://raw.githubusercontent.com/farakiko/xai4hep/dev/docs/_static/images/particlenet_rscores.png" />
+  <img width="300" src="https://raw.githubusercontent.com/farakiko/xai4hep/dev/docs/_static/images/particlenet_rscores.png" />
 </p>
 
 
