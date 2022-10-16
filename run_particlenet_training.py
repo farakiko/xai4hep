@@ -106,7 +106,7 @@ def setup(rank, world_size):
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = "12355"
 
-    # should be faster tahn "gloo" for DistributedDataParallel on gpus
+    # should be faster than "gloo" for DistributedDataParallel on gpus
     dist.init_process_group("nccl", rank=rank, world_size=world_size)
 
 
@@ -170,9 +170,9 @@ def train_ddp(
     train_loader = DataLoader(data_train, batch_size=args.batch_size, shuffle=True)
     valid_loader = DataLoader(data_valid, batch_size=args.batch_size, shuffle=True)
 
-    # give each gpu a subset of the data
-    hyper_train = int(len(dataset_train) / world_size)
-    hyper_valid = int(len(dataset_valid) / world_size)
+    # # give each gpu a subset of the data
+    # hyper_train = int(len(dataset_train) / world_size)
+    # hyper_valid = int(len(dataset_valid) / world_size)
 
     # copy the model to the GPU with id=rank
     print(f"Copying the model on rank {rank}..")
@@ -284,10 +284,9 @@ if __name__ == "__main__":
 
     # run the training using DDP if more than one gpu is available
     print("Loading training datafiles...")
-    if args.quick:
-        data_train = torch.load(f"{args.dataset}/train/processed/data_0.pt")[
-            :1000
-        ]  # use only 1000 events for train
+
+    if args.quick:  # use only 1000 events for train
+        data_train = torch.load(f"{args.dataset}/train/processed/data_0.pt")[:1000]
     else:
         data_train = []
         for i in range(12):
@@ -297,10 +296,8 @@ if __name__ == "__main__":
             print(f"- loaded file {i} for train")
 
     print("Loading validation datafiles...")
-    if args.quick:
-        data_valid = torch.load(f"{args.dataset}/val/processed/data_0.pt")[
-            :300
-        ]  # use only 300 events for val
+    if args.quick:  # use only 300 events for val
+        data_valid = torch.load(f"{args.dataset}/val/processed/data_0.pt")[:300]
     else:
         data_valid = []
         for i in range(4):
@@ -332,8 +329,7 @@ if __name__ == "__main__":
             outpath,
         )
 
-    # quick test
-    # load the best trained model
+    # test the best trained model
     with open(f"{outpath}/model_kwargs.pkl", "rb") as f:
         model_kwargs = pkl.load(f)
 
@@ -345,10 +341,8 @@ if __name__ == "__main__":
     model.eval()
 
     print("Loading testing datafiles...")
-    if args.quick:
-        data_test = torch.load(f"{args.dataset}/test/processed/data_{i}.pt")[
-            :300
-        ]  # use only 300 events for testing
+    if args.quick:  # use only 300 events for testing
+        data_test = torch.load(f"{args.dataset}/test/processed/data_{i}.pt")[:300]
     else:
         data_test = []
         for i in range(4):
