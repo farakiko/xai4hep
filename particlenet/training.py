@@ -1,47 +1,38 @@
-import sklearn.metrics
-import sklearn
-from torch_geometric.data import Data, Dataset
-import time
-import matplotlib.pyplot as plt
-import matplotlib
-import torch_geometric
-from torch_geometric.loader import DataListLoader, DataLoader
-import pandas as pd
-import h5py
-from torch_geometric.typing import Adj, OptTensor, PairOptTensor, PairTensor
-from typing import Callable, Optional, Union
-from torch_geometric.data import Data, DataListLoader, Batch
-from torch_geometric.loader import DataLoader
-
-import pickle as pkl
-import os.path as osp
-import os
-import sys
-from glob import glob
-
-import torch
-from torch import Tensor
-import torch.nn as nn
-from torch.nn import Linear
-from torch_scatter import scatter
-from torch_geometric.nn.conv import MessagePassing
-from torch_geometric.utils import to_dense_adj
-import torch.nn.functional as F
-
-from torch_geometric.nn import EdgeConv, global_mean_pool
-from torch_cluster import knn_graph
-
-import numpy as np
-
 import json
 import math
 import os
+import os.path as osp
+import pickle as pkl
+import sys
 import time
+from glob import glob
+from typing import Callable, Optional, Union
 
+import h5py
 import matplotlib
+import matplotlib.pyplot as plt
 import mplhep as hep
+import numpy as np
+import pandas as pd
+import sklearn
+import sklearn.metrics
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch_geometric
+from torch import Tensor
+from torch.nn import Linear
+from torch_cluster import knn_graph
+from torch_geometric.data import Batch, Data, Dataset
+from torch_geometric.loader import DataListLoader, DataLoader
+from torch_geometric.nn import EdgeConv, global_mean_pool
+from torch_geometric.nn.conv import MessagePassing
+from torch_geometric.typing import Adj, OptTensor, PairOptTensor, PairTensor
+from torch_geometric.utils import to_dense_adj
+from torch_scatter import scatter
+
 plt.style.use(hep.style.CMS)
-plt.rcParams.update({'font.size': 20})
+plt.rcParams.update({"font.size": 20})
 
 matplotlib.use("Agg")
 
@@ -50,14 +41,20 @@ np.seterr(divide="ignore", invalid="ignore")
 
 
 @torch.no_grad()
-def validation_run(rank, model, train_loader, valid_loader, batch_size, num_classes, outpath):
+def validation_run(multi_gpu, device, model, loader):
     with torch.no_grad():
         optimizer = None
-        ret = train(rank, model, train_loader, valid_loader, batch_size, optimizer, num_classes, outpath)
+        ret = train(
+            multi_gpu,
+            device,
+            model,
+            loader,
+            optimizer,
+        )
     return ret
 
 
-def train(rank, model, train_loader, valid_loader, batch_size, optimizer, num_classes, outpath):
+def train(multi_gpu, device, model, loader, optimizer):
     """
     A training/validation run over a given epoch that gets called in the training_loop() function.
     When optimizer is set to None, it freezes the model for a validation_run.
@@ -65,42 +62,29 @@ def train(rank, model, train_loader, valid_loader, batch_size, optimizer, num_cl
 
     is_train = not (optimizer is None)
 
-    if is_train:
-        print(f"---->Initiating a training run on rank {rank}")
-        model.train()
-        loader = train_loader
-    else:
-        print(f"---->Initiating a validation run rank {rank}")
-        model.eval()
-        loader = valid_loader
-
     criterion = nn.BCELoss()
     sig = nn.Sigmoid()
 
-    # initialize loss counters
-    losses = 0
+    # initialize loss and time counters
+    losses, t = 0, 0
 
-    t0, tf = time.time(), 0
-    t = 0
-    for i, batch in enumerate(loader):
+    for batch in loader:
 
-        # transformations for better training
-        batch.x[:, 2] = (batch.x[:, 2] - 1.7) * 0.7  # part_pt_log
-        batch.x[:, 3] = (batch.x[:, 3] - 2.0) * 0.7  # part_e_log
-        batch.x[:, 4] = (batch.x[:, 4] + 4.7) * 0.7  # part_logptrel
-        batch.x[:, 5] = (batch.x[:, 5] + 4.7) * 0.7  # part_logerel
-        batch.x[:, 6] = (batch.x[:, 6] - 0.2) * 4.7  # part_deltaR
+        if multi_gpu:
+            batch = batch
+        else:
+            batch = batch.to(device)
 
         # run forward pass
         t0 = time.time()
-        preds, _, _, _ = model(batch.to(rank))
+        preds, targets = model(batch)
         t1 = time.time()
-        t = t + (t1 - t0)
+        t += t1 - t0
 
-        loss = criterion(sig(preds), batch.y.reshape(-1, 1).float())
+        loss = criterion(sig(preds), targets.reshape(-1, 1).float())
 
         # backprop
-        if is_train:
+        if is_train:  # not run during a validation run
             for param in model.parameters():
                 # better than calling optimizer.zero_grad()
                 # according to https://pytorch.org/tutorials/recipes/recipes/tuning_guide.html
@@ -110,12 +94,7 @@ def train(rank, model, train_loader, valid_loader, batch_size, optimizer, num_cl
 
         losses = losses + loss.detach()
 
-        # if i == 2:
-        #     break
-
-    print(f"Average inference time per batch on rank {rank} is {round((t / len(loader)), 3)}s")
-
-    t0 = time.time()
+    print(f"Average inference time per batch is {round((t / len(loader)), 3)}s")
 
     losses = (losses / (len(loader))).cpu().item()
 
@@ -123,36 +102,31 @@ def train(rank, model, train_loader, valid_loader, batch_size, optimizer, num_cl
 
 
 def training_loop(
-    rank,
+    multi_gpu,
+    device,
     model,
     train_loader,
     valid_loader,
-    batch_size,
     n_epochs,
     patience,
     optimizer,
-    num_classes,
     outpath,
 ):
     """
     Main function to perform training. Will call the train() and validation_run() functions every epoch.
 
     Args:
-        rank: int representing the gpu device id, or str=='cpu' (both work, trust me)
         model: a pytorch model wrapped by DistributedDataParallel (DDP)
         train_loader: a pytorch Dataloader that loads .pt files for training when you invoke the get() method
         valid_loader: a pytorch Dataloader that loads .pt files for validation when you invoke the get() method
         patience: number of stale epochs allowed before stopping the training
         optimizer: optimizer to use for training (by default: Adam)
-        num_classes: number of particle candidate classes to predict (6 for delphes, 9 for cms)
         outpath: path to store the model weights and training plots
     """
 
     # create directory to hold training plots
-    if not os.path.exists(outpath + "/training_plots/"):
-        os.makedirs(outpath + "/training_plots/")
-    if not os.path.exists(f"{outpath}/training_plots/losses/"):
-        os.makedirs(f"{outpath}/training_plots/losses/")
+    if not os.path.exists(f"{outpath}/loss_plots/"):
+        os.makedirs(f"{outpath}/loss_plots/")
 
     t0_initial = time.time()
 
@@ -169,18 +143,22 @@ def training_loop(
             break
 
         # training step
+        print(f"---->Initiating a training run")
         model.train()
         losses = train(
-            rank, model, train_loader, valid_loader, batch_size, optimizer, num_classes, outpath
+            multi_gpu,
+            device,
+            model,
+            train_loader,
+            optimizer,
         )
 
         losses_train.append(losses)
 
         # validation step
+        print(f"---->Initiating a validation run")
         model.eval()
-        losses = validation_run(
-            rank, model, train_loader, valid_loader, batch_size, num_classes, outpath
-        )
+        losses = validation_run(multi_gpu, device, model, valid_loader)
 
         losses_valid.append(losses)
 
@@ -207,7 +185,7 @@ def training_loop(
         eta = epochs_remaining * time_per_epoch / 60
 
         print(
-            f"Rank {rank}: epoch={epoch + 1} / {n_epochs} "
+            f"epoch={epoch + 1} / {n_epochs} "
             + f"train_loss={round(losses_train[epoch], 4)} "
             + f"valid_loss={round(losses_valid[epoch], 4)} "
             + f"stale={stale_epochs} "
@@ -229,13 +207,13 @@ def training_loop(
         ax.set_xlabel("Epochs")
         ax.set_ylabel("Loss")
         ax.legend(loc="best")
-        plt.savefig(f"{outpath}/training_plots/losses/loss_{epoch}.pdf")
+        plt.savefig(f"{outpath}/loss_plots/losses_epoch_{epoch}.pdf")
         plt.close(fig)
 
-        with open(f"{outpath}/training_plots/losses/loss_{epoch}_train.pkl", "wb") as f:
-            pkl.dump(losses_train, f)
-        with open(f"{outpath}/training_plots/losses/loss_{epoch}_valid.pkl", "wb") as f:
-            pkl.dump(losses_valid, f)
+        with open(f"{outpath}/loss_plots/losses_epoch_{epoch}.pkl", "wb") as f:
+            pkl.dump((losses_train, losses_valid), f)
 
         print("----------------------------------------------------------")
-    print(f"Done with training. Total training time on rank {rank} is {round((time.time() - t0_initial)/60,3)}min")
+    print(
+        f"Done with training. Total training time is {round((time.time() - t0_initial)/60,3)}min"
+    )

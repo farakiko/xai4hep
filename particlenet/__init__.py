@@ -1,7 +1,5 @@
+from particlenet.model import ParticleNet
+
 from particlenet.dataset import TopTaggingDataset
 from particlenet.training import training_loop
-from particlenet.utils import (
-    make_file_loaders,
-    save_model,
-    load_model
-)
+from particlenet.utils import load_data, make_roc, save_model
