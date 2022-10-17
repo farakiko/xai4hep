@@ -18,10 +18,7 @@ import torch_geometric
 from torch_geometric.data import Batch, Data
 from torch_geometric.loader import DataListLoader, DataLoader
 
-sys.path.insert(0, "..")
-from models import ParticleNet
-
-from particlenet import load_data, make_roc, save_model, training_loop
+from particlenet import ParticleNet, load_data, make_roc, save_model, training_loop
 
 plt.style.use(hep.style.CMS)
 plt.rcParams.update({"font.size": 20})
@@ -90,7 +87,7 @@ if __name__ == "__main__":
     """
     e.g.
     python run_training.py --overwrite --quick --model_prefix='ParticleNet_model' --dataset="/xai4hepvol/toptagging/" --outpath="/xai4hepvol/experiments/"
-    
+
     """
 
     # setup the input/output dimension of the model

@@ -20,8 +20,7 @@ from torch_geometric.data import Batch, Data
 from torch_geometric.loader import DataLoader
 
 from explainer import LRP_ParticleNet
-from models import ParticleNet
-from particlenet import load_data
+from particlenet import ParticleNet, load_data
 
 warnings.filterwarnings("ignore")
 

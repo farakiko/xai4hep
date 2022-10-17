@@ -21,8 +21,7 @@ from torch_geometric.data import Batch, Data, DataListLoader, DataLoader
 from torch_geometric.nn import GravNetConv
 
 from explainer import LRP_MLPF
-from mlpf import make_Rmaps
-from models import MLPF
+from mlpf import MLPF, make_Rmaps
 
 # this script runs lrp on a trained MLPF model
 
