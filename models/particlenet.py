@@ -82,8 +82,12 @@ class EdgeConvBlock(nn.Module):
 
 
 class ParticleNet(nn.Module):
-    def __init__(self, node_feat_size, num_classes=1, k=16, depth=2, dropout=False):
+    def __init__(
+        self, for_LRP, node_feat_size, num_classes=1, k=16, depth=2, dropout=False
+    ):
         super(ParticleNet, self).__init__()
+        self.for_LRP = for_LRP
+
         self.node_feat_size = node_feat_size
         self.num_classes = num_classes
 
@@ -116,9 +120,22 @@ class ParticleNet(nn.Module):
         self.fc1 = nn.Linear(self.input_sizes[-1], self.fc_size)
         self.fc2 = nn.Linear(self.fc_size, self.num_classes)
 
+        self.sig = nn.Sigmoid()
+
     def forward(self, batch):
+
         x = batch.x
+        y = batch.y
         batch = batch.batch
+
+        # input transformations
+        x[:, 2] = (x[:, 2] - 1.7) * 0.7  # part_pt_log
+        x[:, 3] = (x[:, 3] - 2.0) * 0.7  # part_e_log
+        x[:, 4] = (x[:, 4] + 4.7) * 0.7  # part_logptrel
+        x[:, 5] = (x[:, 5] + 4.7) * 0.7  # part_logerel
+        x[:, 6] = (x[:, 6] - 0.2) * 4.7  # part_deltaR
+
+        # useful placeholders for LRP studies
         edge_activations = {}
         edge_block_activations = {}
         edge_index = {}
@@ -148,35 +165,10 @@ class ParticleNet(nn.Module):
         if self.dropout:
             x = self.dropout_layer(x)
         x = self.fc2(x)
+        x = self.sig(x)
 
-        # no softmax because pytorch cross entropy loss includes softmax
-        return x, edge_activations, edge_block_activations, edge_index
-
-
-#
-# # get sample dataset
-# dataset = jetnet.datasets.JetNet(jet_type="g")
-#
-# # load the dataset in a convenient pyg format
-# print('Loading training datafiles...')
-# loader = DataLoader(torch.load(f"../data/toptagging/test/processed/data_{0}.pt"), batch_size=1, shuffle=True)
-#
-# for batch in loader:
-#     break
-#
-# model_kwargs = {
-#     "node_feat_size": 7,
-#     "num_classes": 1,
-#     "k": 12,
-# }
-#
-# model = ParticleNet(**model_kwargs)
-#
-# _, _, _, edge_index = model(batch)
-#
-
-# try:
-#     state_dict = model.module.state_dict()
-# except AttributeError:
-#     state_dict = model.state_dict()
-# torch.save(state_dict, f'../state_dict.pth')
+        # save different objects if you are running lrp studies
+        if self.for_LRP:
+            return x, edge_activations, edge_block_activations, edge_index
+        else:
+            return x, y

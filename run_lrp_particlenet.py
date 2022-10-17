@@ -16,19 +16,23 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch_geometric
-from sklearn.metrics import accuracy_score
-from torch.nn import Linear as Lin
-from torch.nn import ReLU
-from torch.nn import Sequential as Seq
 from torch_geometric.data import Batch, Data
 from torch_geometric.loader import DataLoader
-from torch_geometric.nn import GravNetConv
 
 from explainer import LRP_ParticleNet
 from models import ParticleNet
+from particlenet import load_data
 
 warnings.filterwarnings("ignore")
 
+# Check if the GPU configuration and define the global base device
+if torch.cuda.device_count() > 0:
+    print(f"Will use {torch.cuda.device_count()} gpu(s)")
+    print("GPU model:", torch.cuda.get_device_name(0))
+    device = torch.device("cuda:0")
+else:
+    print("Will use cpu")
+    device = torch.device("cpu")
 
 # this script runs lrp on a trained ParticleNet model
 
@@ -41,7 +45,10 @@ parser.add_argument(
     help="path to the trained model directory",
 )
 parser.add_argument(
-    "--model_prefix", type=str, default="ParticleNet_depth2", help="Which model to load"
+    "--model_prefix",
+    type=str,
+    default="ParticleNet_dropout1",
+    help="Which model to load",
 )
 parser.add_argument(
     "--dataset", type=str, default="./data/toptagging/", help="path to datafile"
@@ -57,23 +64,6 @@ parser.add_argument("--quick", dest="quick", action="store_true")
 args = parser.parse_args()
 
 
-def save_time_in_json(outpath, tf, ti, mode):
-    if mode == "seconds":
-        dt = round((tf - ti), 3)
-    elif mode == "minutes":
-        dt = round((tf - ti) / 60, 3)
-    elif mode == "hours":
-        dt = round((tf - ti) / 3600, 3)
-
-    with open(f"{outpath}/time_{mode}.json", "w") as fp:  # dump hyperparameters
-        json.dump(
-            {
-                "time": dt,
-            },
-            fp,
-        )
-
-
 if __name__ == "__main__":
     """
     e.g. to run on prp
@@ -81,33 +71,18 @@ if __name__ == "__main__":
 
     """
 
-    # Check if the GPU configuration and define the global base device
-    if torch.cuda.device_count() > 0:
-        print(f"Will use {torch.cuda.device_count()} gpu(s)")
-        print("GPU model:", torch.cuda.get_device_name(0))
-        device = torch.device("cuda:0")
-    else:
-        print("Will use cpu")
-        device = torch.device("cpu")
-
     outpath = osp.join(args.outpath, args.model_prefix)
 
     # load the testing data
-    print("Loading testing datafiles...")
-    data_test = []
-    for i in range(4):
-        data_test = data_test + torch.load(f"{args.dataset}/test/processed/data_{i}.pt")
-        print(f"- loaded file {i} for test")
+    print("- loading datafiles for lrp studies...")
+    data_test = load_data(args.dataset, "test", 4, args.quick)
     loader = DataLoader(data_test, batch_size=1, shuffle=True)
-
-    # loader = DataLoader(torch.load(f"{args.dataset}/test/small/data_0.pt"), batch_size=1, shuffle=True)
-    # print(f"- loaded file 100 jets for testing")
 
     # load a pretrained model
     with open(f"{outpath}/model_kwargs.pkl", "rb") as f:
         model_kwargs = pkl.load(f)
 
-    if args.model == -1:
+    if args.model == -1:  # load the best model
         state_dict = torch.load(
             f"{outpath}/weights/best_epoch_weights.pth", map_location=device
         )
@@ -117,9 +92,12 @@ if __name__ == "__main__":
             map_location=device,
         )
 
+    # the following line will make it possible to retrieve intermediate activations
+    model_kwargs["for_LRP"] = True
+
     model = ParticleNet(**model_kwargs)
     model.load_state_dict(state_dict)
-    # model.eval()
+    model.eval()
     model.to(device)
     print(model)
 
@@ -136,16 +114,11 @@ if __name__ == "__main__":
 
     # initilize placeholders
     R_edges_list, edge_index_list = [], []
-    batch_x_list, batch_y_list = (
-        [],
-        [],
-    )  # to store the input and target for plotting purposes
-    batch_px_list, batch_py_list, batch_pz_list, batch_E_list = (
-        [],
-        [],
-        [],
-        [],
-    )  # to store the p4 for plotting purposes
+
+    # to store the input and target for plotting purposes
+    batch_x_list, batch_y_list = [], []
+    # to store the p4 for plotting purposes
+    batch_px_list, batch_py_list, batch_pz_list, batch_E_list = [], [], [], []
 
     ti = time.time()
     for i, jet in enumerate(loader):
@@ -157,8 +130,7 @@ if __name__ == "__main__":
         if i == 1000:
             break
 
-        print(f"Explaining jet # {i}")
-        print(f"Testing lrp on: \n {jet}")
+        print(f"Explaining jet # {i}: {jet}")
 
         # explain a single jet
         try:
@@ -183,8 +155,14 @@ if __name__ == "__main__":
 
     tf = time.time()
 
-    save_time_in_json(PATH, tf, ti, "minutes")
-    save_time_in_json(PATH, tf, ti, "hours")
+    with open(f"{PATH}/time.json", "w") as fp:  # dump time
+        json.dump(
+            {
+                "time_min": round((tf - ti) / 60, 3),
+                "time_hours": round((tf - ti) / 3600, 3),
+            },
+            fp,
+        )
 
     # store the Rscores in the binder folder for further notebook plotting
     with open(f"{PATH}/batch_x.pkl", "wb") as handle:

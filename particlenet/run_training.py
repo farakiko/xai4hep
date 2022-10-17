@@ -7,34 +7,21 @@ import sys
 import time
 from glob import glob
 
-import h5py
-import hist as hist2
 import matplotlib
-import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import mplhep as hep
 import numpy as np
 import pandas as pd
 import torch
-import torch.distributed as dist
-import torch.multiprocessing as mp
 import torch.nn as nn
 import torch_geometric
-from sklearn.metrics import auc, roc_curve
-from torch.nn.parallel import DistributedDataParallel as DDP
-from torch_geometric.data import Batch, Data, DataListLoader
-from torch_geometric.loader import DataLoader
+from torch_geometric.data import Batch, Data
+from torch_geometric.loader import DataListLoader, DataLoader
 
 sys.path.insert(0, "..")
 from models import ParticleNet
 
-from particlenet import (
-    TopTaggingDataset,
-    load_model,
-    make_file_loaders,
-    save_model,
-    training_loop,
-)
+from particlenet import load_data, make_roc, save_model, training_loop
 
 plt.style.use(hep.style.CMS)
 plt.rcParams.update({"font.size": 20})
@@ -45,19 +32,22 @@ matplotlib.use("Agg")
 np.seterr(divide="ignore", invalid="ignore")
 
 # define the global base device
-if torch.cuda.device_count():
+world_size = torch.cuda.device_count()
+multi_gpu = world_size >= 2
+if world_size:
     device = torch.device("cuda:0")
+    for i in range(world_size):
+        print(f"Device {i}: {torch.cuda.get_device_name(i)}")
+    torch.backends.cudnn.benchmark = True
 else:
     device = "cpu"
+    print("Device: CPU")
 
-"""
-Developing a PyTorch Geometric ParticleNet training/inference pipeline using DistributedDataParallel.
-
-Author: Farouk Mokhtar
-"""
-
+# define argparse
 parser = argparse.ArgumentParser()
-
+parser.add_argument(
+    "--dataset", type=str, default="../data/toptagging/", help="dataset path"
+)
 parser.add_argument(
     "--outpath", type=str, default="../experiments/", help="output folder"
 )
@@ -68,13 +58,10 @@ parser.add_argument(
     help="directory to hold the model and plots",
 )
 parser.add_argument(
-    "--dataset", type=str, default="../data/toptagging/", help="dataset path"
-)
-parser.add_argument(
     "--overwrite",
     dest="overwrite",
     action="store_true",
-    help="Overwrites the model if True",
+    help="overwrites the model",
 )
 parser.add_argument("--n_epochs", type=int, default=3, help="number of training epochs")
 parser.add_argument("--batch_size", type=int, default=100)
@@ -89,160 +76,22 @@ parser.add_argument(
     "--depth", type=int, default=1, help="depth of DNN in each EdgeConv block"
 )
 parser.add_argument("--dropout", dest="dropout", action="store_true")
-parser.add_argument("--quick", dest="quick", action="store_true")
+parser.add_argument(
+    "--quick",
+    dest="quick",
+    action="store_true",
+    help="perform quick training and testing",
+)
 
 args = parser.parse_args()
 
 
-def setup(rank, world_size):
-    """
-    Necessary setup function that sets up environment variables and initializes the process group
-    to perform training & inference using DistributedDataParallel (DDP). DDP relies on c10d ProcessGroup
-    for communications, hence, applications must create ProcessGroup instances before constructing DDP.
-
-    Args:
-    rank: the process id (or equivalently the gpu index)
-    world_size: number of gpus available
-    """
-
-    os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = "12355"
-
-    # should be faster than "gloo" for DistributedDataParallel on gpus
-    dist.init_process_group("nccl", rank=rank, world_size=world_size)
-
-
-def cleanup():
-    """
-    Necessary function that destroys the spawned process group at the end.
-    """
-
-    dist.destroy_process_group()
-
-
-def run_demo(
-    demo_fn, world_size, args, data_train, data_valid, model, num_classes, outpath
-):
-    """
-    Necessary function that spawns a process group of size=world_size processes to run demo_fn()
-    on each gpu device that will be indexed by 'rank'.
-
-    Args:
-    demo_fn: function you wish to run on each gpu
-    world_size: number of gpus available
-    mode: 'train' or 'inference'
-    """
-
-    mp.spawn(
-        demo_fn,
-        args=(world_size, args, data_train, data_valid, model, num_classes, outpath),
-        nprocs=world_size,
-        join=True,
-    )
-
-
-def train_ddp(
-    rank, world_size, args, data_train, data_valid, model, num_classes, outpath
-):
-    """
-    A train_ddp() function that will be passed as a demo_fn to run_demo() to
-    perform training over multiple gpus using DDP.
-
-    It divides and distributes the training dataset appropriately, copies the model,
-    wraps the model with DDP on each device to allow synching of gradients,
-    and finally, invokes the training_loop() to run synchronized training among devices.
-    """
-
-    setup(rank, world_size)
-
-    print(f"Running training on rank {rank}: {torch.cuda.get_device_name(rank)}")
-
-    print("Building dataloaders...")
-    data_train = data_train[
-        int(rank * (len(data_train) / world_size)) : int(
-            (rank + 1) * (len(data_train) / world_size)
-        )
-    ]
-    data_valid = data_valid[
-        int(rank * (len(data_valid) / world_size)) : int(
-            (rank + 1) * (len(data_valid) / world_size)
-        )
-    ]
-
-    train_loader = DataLoader(data_train, batch_size=args.batch_size, shuffle=True)
-    valid_loader = DataLoader(data_valid, batch_size=args.batch_size, shuffle=True)
-
-    # # give each gpu a subset of the data
-    # hyper_train = int(len(dataset_train) / world_size)
-    # hyper_valid = int(len(dataset_valid) / world_size)
-
-    # copy the model to the GPU with id=rank
-    print(f"Copying the model on rank {rank}..")
-    model = model.to(rank)
-    model.train()
-    ddp_model = DDP(model, device_ids=[rank])
-
-    optimizer = torch.optim.Adam(ddp_model.parameters(), lr=args.lr)
-
-    training_loop(
-        rank,
-        ddp_model,
-        train_loader,
-        valid_loader,
-        args.batch_size,
-        args.n_epochs,
-        args.patience,
-        optimizer,
-        num_classes,
-        outpath,
-    )
-
-    cleanup()
-
-
-def train(
-    device, world_size, args, data_train, data_valid, model, num_classes, outpath
-):
-    """
-    A train() function that will load the training dataset and start a training_loop
-    on a single device (cuda or cpu).
-    """
-
-    if device == "cpu":
-        print("Running training on cpu")
-    else:
-        print(f"Running training on: {torch.cuda.get_device_name(device)}")
-        device = device.index
-
-    print("Building dataloaders...")
-    train_loader = DataLoader(data_train, batch_size=args.batch_size)
-    valid_loader = DataLoader(data_valid, batch_size=args.batch_size)
-
-    # move the model to the device (cuda or cpu)
-    model = model.to(device)
-    model.train()
-
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-
-    training_loop(
-        device,
-        model,
-        train_loader,
-        valid_loader,
-        args.batch_size,
-        args.n_epochs,
-        args.patience,
-        optimizer,
-        num_classes,
-        outpath,
-    )
-
-
 if __name__ == "__main__":
-
-    world_size = torch.cuda.device_count()
-
-    torch.backends.cudnn.benchmark = True
+    """
+    e.g.
+    python run_training.py --overwrite --quick --model_prefix='ParticleNet_model' --dataset="/xai4hepvol/toptagging/" --outpath="/xai4hepvol/experiments/"
+    
+    """
 
     # setup the input/output dimension of the model
     num_features = 7  # we have 7 input features
@@ -250,7 +99,11 @@ if __name__ == "__main__":
 
     outpath = osp.join(args.outpath, args.model_prefix)
 
+    if not osp.isdir(outpath):
+        os.makedirs(outpath)
+
     model_kwargs = {
+        "for_LRP": False,
         "node_feat_size": num_features,
         "num_classes": num_classes,
         "k": args.nearest,
@@ -260,10 +113,12 @@ if __name__ == "__main__":
 
     model = ParticleNet(**model_kwargs)
 
+    print(model)
+    print(f"Model prefix: {args.model_prefix}")
+
     # save model_kwargs and hyperparameters
     save_model(
         args,
-        args.model_prefix,
         outpath,
         model_kwargs,
         model.kernel_sizes,
@@ -279,59 +134,38 @@ if __name__ == "__main__":
         state_dict = model.state_dict()
     torch.save(state_dict, f"{outpath}/before_training_weights.pth")
 
-    print(model)
-    print(args.model_prefix)
+    # Load the training datafiles
+    print("- loading datafiles for training...")
+    data_train = load_data(args.dataset, "train", 12, args.quick)
+    data_valid = load_data(args.dataset, "val", 4, args.quick)
 
-    print("Training over {} epochs".format(args.n_epochs))
-
-    # run the training using DDP if more than one gpu is available
-    print("Loading training datafiles...")
-
-    if args.quick:  # use only 1000 events for train
-        data_train = torch.load(f"{args.dataset}/train/processed/data_0.pt")[:1000]
+    # make convenient dataloaders and use DataParallel if multi_gpu is on
+    if multi_gpu:
+        train_loader = DataListLoader(data_train, batch_size=args.batch_size)
+        valid_loader = DataListLoader(data_valid, batch_size=args.batch_size)
+        model = torch_geometric.nn.DataParallel(model)
     else:
-        data_train = []
-        for i in range(12):
-            data_train = data_train + torch.load(
-                f"{args.dataset}/train/processed/data_{i}.pt"
-            )
-            print(f"- loaded file {i} for train")
+        train_loader = DataLoader(data_train, batch_size=args.batch_size)
+        valid_loader = DataLoader(data_valid, batch_size=args.batch_size)
 
-    print("Loading validation datafiles...")
-    if args.quick:  # use only 300 events for val
-        data_valid = torch.load(f"{args.dataset}/val/processed/data_0.pt")[:300]
-    else:
-        data_valid = []
-        for i in range(4):
-            data_valid = data_valid + torch.load(
-                f"{args.dataset}/val/processed/data_{i}.pt"
-            )
-            print(f"- loaded file {i} for valid")
+    model.to(device)
 
-    if world_size >= 2:
-        run_demo(
-            train_ddp,
-            world_size,
-            args,
-            data_train,
-            data_valid,
-            model,
-            num_classes,
-            outpath,
-        )
-    else:
-        train(
-            device,
-            world_size,
-            args,
-            data_train,
-            data_valid,
-            model,
-            num_classes,
-            outpath,
-        )
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
-    # test the best trained model
+    print(f"- training over {args.n_epochs} epochs")
+    training_loop(
+        multi_gpu,
+        device,
+        model,
+        train_loader,
+        valid_loader,
+        args.n_epochs,
+        args.patience,
+        optimizer,
+        outpath,
+    )
+
+    # load the best trained model for testing
     with open(f"{outpath}/model_kwargs.pkl", "rb") as f:
         model_kwargs = pkl.load(f)
 
@@ -339,60 +173,46 @@ if __name__ == "__main__":
 
     model = ParticleNet(**model_kwargs)
     model.load_state_dict(state_dict)
+
+    print("- loading datafiles for testing...")
+    data_test = load_data(args.dataset, "test", 4, args.quick)
+
+    if multi_gpu:
+        test_loader = DataListLoader(
+            data_test, batch_size=args.batch_size, shuffle=True
+        )
+        model = torch_geometric.nn.DataParallel(model)
+    else:
+        test_loader = DataLoader(data_test, batch_size=args.batch_size, shuffle=True)
+
     model.to(device)
     model.eval()
 
-    print("Loading testing datafiles...")
-    if args.quick:  # use only 300 events for testing
-        data_test = torch.load(f"{args.dataset}/test/processed/data_{i}.pt")[:300]
-    else:
-        data_test = []
-        for i in range(4):
-            data_test = data_test + torch.load(
-                f"{args.dataset}/test/processed/data_{i}.pt"
-            )
-            print(f"- loaded file {i} for test")
-
-    loader = DataLoader(data_test, batch_size=args.batch_size, shuffle=True)
-
-    sig = nn.Sigmoid()
-
+    print("- making predictions")
     y_score = None
     y_test = None
-    for i, batch in enumerate(loader):
-        print(f"making prediction on sample # {i}")
+    for i, batch in enumerate(test_loader):
 
-        preds, _, _, _ = model(batch.to(device))
-        preds = sig(preds).detach().cpu()
+        if multi_gpu:
+            batch = batch
+        else:
+            batch = batch.to(device)
+
+        preds, targets = model(batch)
+        preds = preds.detach().cpu()
 
         if y_score == None:
-            y_score = preds[:].reshape(-1).cpu()
-            y_test = batch.y.cpu()
+            y_score = preds[:].detach().cpu().reshape(-1)
+            y_test = targets.detach().cpu()
         else:
-            y_score = torch.cat([y_score.cpu(), preds[:].reshape(-1).cpu()])
-            y_test = torch.cat([y_test.cpu(), batch.y.cpu()])
+            y_score = torch.cat([y_score, preds[:].detach().cpu().reshape(-1)])
+            y_test = torch.cat([y_test, targets.detach().cpu()])
 
     # save the predictions
-    print("saving the predictions")
+    print("- saving predictions")
     torch.save(y_test, f"{outpath}/y_test.pt")
     torch.save(y_score, f"{outpath}/y_score.pt")
 
-    # Compute ROC curve and ROC area for each class
-    print("making the Roc curves")
-    fpr, tpr, _ = roc_curve(y_test.cpu(), y_score.cpu())
-    roc_auc = auc(fpr, tpr)
-
-    fig, ax = plt.subplots()
-    ax.plot(
-        tpr,
-        fpr,
-        color="darkorange",
-        lw=2,
-        label=f"AUC = {round(auc(fpr, tpr)*100,2)}%",
-    )
-    plt.xlim([0.0, 1.0])
-    plt.ylabel("False Positive Rate")
-    plt.xlabel("True Positive Rate")
-    plt.yscale("log")
-    plt.legend(loc="lower right")
-    plt.savefig(f"{outpath}/Roc_curve.pdf")
+    # Compute ROC curve
+    print("- making Roc curves")
+    make_roc(y_test, y_score, f"{outpath}/Roc_curve.pdf")
