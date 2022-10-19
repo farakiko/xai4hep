@@ -8,6 +8,8 @@ from collections.abc import Sequence
 
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import torch
 from sklearn.metrics import auc, roc_curve
 from torch_geometric.data import Batch
@@ -84,3 +86,185 @@ def make_roc(y_test, y_score, path):
     plt.yscale("log")
     plt.legend(loc="lower right")
     plt.savefig(path)
+
+
+def make_dr_Mij_plots(outpath, epoch, Top_N=5):
+
+    """
+    Computes and plots the deltaR and the invariant mass of the Top_N relevant edges for the model at a given epoch.
+
+    Args:
+        outpath (str): Path to load the Rscores pkl files.
+        epoch (int): The epoch at which to load the model.
+            (if -1: best trained model, if 0: untrained model, otherwise loads the corresponding epoch)
+        Top_N (int): The number of relevant edges to look at.
+
+    Returns:
+        subjet_idx (np.array): NumPy array of shape ``[num_particles]`` with elements
+                                representing which subjet the particle belongs to.
+
+    """
+
+    if epoch == -1:
+        PATH = f"{outpath}/Rscores_best"
+        legend_title = f"Trained model"
+        save_as = "best"
+    elif epoch == 0:
+        PATH = f"{outpath}/Rscores_untrained"
+        legend_title = f"Untrained model"
+        save_as = "untrained"
+    else:
+        PATH = f"{outpath}/Rscores_epoch_{epoch}"
+        legend_title = f"Model at epoch {epoch}"
+        save_as = f"epoch_{epoch}"
+
+    # load the jet information
+    with open(f"{PATH}/batch_x.pkl", "rb") as handle:
+        batch_x_list = pkl.load(handle)
+    with open(f"{PATH}/batch_y.pkl", "rb") as handle:
+        batch_y_list = pkl.load(handle)
+    with open(f"{PATH}/batch_p4.pkl", "rb") as handle:
+        batch_p4_list = pkl.load(handle)
+
+    # load the edgeRscores and edge_index of each EdgeConv block
+    with open(f"{PATH}/R_edges.pkl", "rb") as handle:
+        R_edges_list = pkl.load(handle)
+    with open(f"{PATH}/edge_index.pkl", "rb") as handle:
+        edge_index_list = pkl.load(handle)
+
+    dr_top, dr_qcd = [], []
+    Mij_top, Mij_qcd = [], []
+
+    for i in range(len(batch_y_list)):
+        # define the jet information
+        jet_label = batch_y_list[i]
+
+        eta = batch_x_list[i][:, 0]
+        phi = batch_x_list[i][:, 1]
+
+        px = batch_p4_list[i][:, 0]
+        py = batch_p4_list[i][:, 1]
+        pz = batch_p4_list[i][:, 2]
+        e = batch_p4_list[i][:, 3]
+
+        # define the edgeRscores and the edge_index of the last EdgeConv block
+        edge_Rscores = R_edges_list[i]["edge_conv_2"]
+        edge_index = edge_index_list[i]["edge_conv_2"]
+
+        def deltaR(eta1, eta2, phi1, phi2):
+            return torch.sqrt(torch.square(eta2 - eta1) + torch.square(phi2 - phi1))
+
+        # pick the Top_N edge Rscores, get the indices
+        top_edges = torch.topk(edge_Rscores, Top_N).indices
+
+        for edge in top_edges:
+            particle_1 = edge_index[0][edge]
+            particle_2 = edge_index[1][edge]
+
+            px1 = px[particle_1]
+            py1 = py[particle_1]
+            pz1 = pz[particle_1]
+
+            px2 = px[particle_2]
+            py2 = py[particle_2]
+            pz2 = pz[particle_2]
+
+            eta1 = eta[particle_1]
+            eta2 = eta[particle_2]
+
+            phi1 = phi[particle_1]
+            phi2 = phi[particle_2]
+
+            e1 = e[particle_1]
+            e2 = e[particle_2]
+
+            M12 = torch.sqrt(
+                torch.square(e1 + e2)
+                - torch.square(px1 + px2)
+                - torch.square(py1 + py2)
+                - torch.square(pz1 + pz2)
+            )
+
+            if jet_label == 1:
+                dr_top.append(deltaR(eta1, eta2, phi1, phi2).item())
+                Mij_top.append(M12)
+            else:
+                dr_qcd.append(deltaR(eta1, eta2, phi1, phi2).item())
+                Mij_qcd.append(M12)
+
+    # save the results
+    if not os.path.exists(f"{outpath}/dr_plots"):
+        os.makedirs(f"{outpath}/dr_plots")
+    with open(f"{outpath}/dr_plots/dr_{save_as}_top.pkl", "wb") as f:
+        pkl.dump(dr_top, f)
+    with open(f"{outpath}/dr_plots/dr_{save_as}_qcd.pkl", "wb") as f:
+        pkl.dump(dr_qcd, f)
+
+    if not os.path.exists(f"{outpath}/Mij_plots"):
+        os.makedirs(f"{outpath}/Mij_plots")
+    with open(f"{outpath}/Mij_plots/Mij_{save_as}_top.pkl", "wb") as f:
+        pkl.dump(Mij_top, f)
+    with open(f"{outpath}/Mij_plots/Mij_{save_as}_qcd.pkl", "wb") as f:
+        pkl.dump(Mij_qcd, f)
+
+    # make the dr plot
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.hist(
+        dr_top,
+        bins=np.linspace(0, 1.5, 30),
+        label="Top",
+        color="Blue",
+        histtype="step",
+        linewidth=1,
+        density=True,
+    )
+    ax.hist(
+        dr_qcd,
+        bins=np.linspace(0, 1.5, 30),
+        label="QCD",
+        color="Orange",
+        histtype="step",
+        linewidth=2,
+        density=True,
+    )
+    ax.legend(title=legend_title)
+    ax.set_yscale("log")
+    ax.set_ylim(0, 20)
+    ax.set_xlim(0, 1.6)
+    ax.set_xticks([0, 0.5, 1, 1.5])
+    ax.set_xlabel("$\Delta$R of the 5 most relevant edges")
+    ax.set_ylabel("Normalized counts")
+    fig.tight_layout()
+    plt.savefig(f"{outpath}/dr_plots/dr_{save_as}.pdf")
+    print(f"- saved the plot as {outpath}/dr_plots/dr_{save_as}.pdf")
+
+    # make the Mij plot
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.hist(
+        Mij_top,
+        bins=np.linspace(0, 100),
+        label="Top",
+        color="Blue",
+        histtype="step",
+        linewidth=1,
+        density=True,
+    )
+    ax.hist(
+        Mij_qcd,
+        bins=np.linspace(0, 100),
+        label="QCD",
+        color="Orange",
+        histtype="step",
+        linewidth=2,
+        density=True,
+    )
+    ax.legend(title=legend_title)
+    ax.set_yscale("log")
+    ax.set_ylim(0, 20)
+    # ax.set_xlim(0, 100)
+    # ax.set_xticks([0, 0.5, 1, 1.5])
+    ax.set_xlabel("Invariant mass of the 5 most relevant edges")
+    ax.set_ylabel("Normalized counts")
+    fig.tight_layout()
+    plt.savefig(f"{outpath}/Mij_plots/Mij_{save_as}.pdf")
+    print(f"- saved the plot as {outpath}/Mij_plots/Mij_{save_as}.pdf")

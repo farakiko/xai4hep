@@ -1,17 +1,18 @@
-import pickle as pkl
-import os.path as osp
 import os
+import os.path as osp
+import pickle as pkl
 import sys
 from glob import glob
 
 import torch
-
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn import Sequential as Seq, Linear as Lin, ReLU
+from torch.nn import Linear as Lin
+from torch.nn import ReLU
+from torch.nn import Sequential as Seq
 
 
-class LRP():
+class LRP:
 
     """
     LRP class that introduces useful helper functions defined on a PyTorch model, and an explain method that runs layerwise-relevance propagation.
@@ -55,11 +56,16 @@ class LRP():
         def get_activation(name):
             def hook(model, input, output):
                 activations[name] = input[0]
+
             return hook
 
         for name, module in self.model.named_modules():
             # unfold any containers so as to register hooks only for their child modules
-            if ('Linear' in str(type(module))) or ('activation' in str(type(module))) or ('BatchNorm1d' in str(type(module))):
+            if (
+                ("Linear" in str(type(module)))
+                or ("activation" in str(type(module)))
+                or ("BatchNorm1d" in str(type(module)))
+            ):
                 module.register_forward_hook(get_activation(name))
 
         # run a forward pass
@@ -71,7 +77,7 @@ class LRP():
         self.num_layers = len(activations.keys())
         self.in_features_dim = self.name2layer(list(activations.keys())[0]).in_features
 
-        print(f'Total number of layers: {self.num_layers}')
+        print(f"Total number of layers: {self.num_layers}")
 
         # initialize Rscores for skip connections (in case there are any)
         if len(self.skip_connections) != 0:
@@ -111,15 +117,19 @@ class LRP():
         # get layer activations
         input = self.activations[layer_name].to(self.device).detach()
 
-        print(f"Explaining layer {self.num_layers+1-layer_index}/{self.num_layers}: {layer}")
+        print(
+            f"Explaining layer {self.num_layers+1-layer_index}/{self.num_layers}: {layer}"
+        )
 
-        if 'Linear' in str(layer):
-            Rscores_new = self.eps_rule(self, layer, input, Rscores_old, neuron_to_explain)
+        if "Linear" in str(layer):
+            Rscores_new = self.eps_rule(
+                self, layer, input, Rscores_old, neuron_to_explain
+            )
             return Rscores_new
         else:
-            if 'activation' in str(layer):
+            if "activation" in str(layer):
                 print(f"- skipping layer because it's an activation layer")
-            elif 'BatchNorm1d' in str(layer):
+            elif "BatchNorm1d" in str(layer):
                 print(f"- skipping layer because it's a BatchNorm layer")
             print(f"- Rscores do not need to be computed")
             return Rscores_old
@@ -150,8 +160,9 @@ class LRP():
 
         torch.cuda.empty_cache()
 
-        W = layer.weight.detach()   # get weight matrix
-        W = torch.transpose(W, 0, 1)    # sanity check of forward pass: (torch.matmul(x, W) + layer.bias) == layer(x)
+        W = layer.weight.detach()  # get weight matrix
+        W = torch.transpose(W, 0, 1)
+        # sanity check of forward pass: (torch.matmul(x, W) + layer.bias) == layer(x)
 
         # for the output layer, pick the part of the weight matrix connecting only to the neuron you're attempting to explain
         if layer == list(self.model.modules())[-1]:
@@ -164,20 +175,24 @@ class LRP():
         # (3) compute the new Rscores
         Rscores_new = torch.matmul(scaledR, torch.transpose(W, 0, 1)) * x
 
-        print('- Finished computing Rscores')
+        print("- Finished computing Rscores")
 
         # checking conservation of Rscores
         rtol = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
         for tol in rtol:
-            if (torch.allclose(Rscores_old.sum(axis=1), Rscores_new.sum(axis=1), rtol=tol)):
-                print(f'- Rscores are conserved up to relative tolerance {str(tol)}')
+            if torch.allclose(
+                Rscores_old.sum(axis=1), Rscores_new.sum(axis=1), rtol=tol
+            ):
+                print(f"- Rscores are conserved up to relative tolerance {str(tol)}")
                 break
 
         if layer in self.skip_connections:
             # set aside the relevance of the input_features in the skip connection
             # recall: it is assumed that the skip connections are defined in the following order torch.cat[(input_features, ...)] )
-            self.skip_connections_relevance = self.skip_connections_relevance + Rscores_new[:, :self.in_features_dim]
-            return Rscores_new[:, self.in_features_dim:]
+            self.skip_connections_relevance = (
+                self.skip_connections_relevance + Rscores_new[:, : self.in_features_dim]
+            )
+            return Rscores_new[:, self.in_features_dim :]
 
         return Rscores_new
 
@@ -206,12 +221,15 @@ class LRP():
         """
         explainable_layers = []
         for name, module in self.model.named_modules():
-            if ('Linear' in str(type(module))):
+            if "Linear" in str(type(module)):
                 explainable_layers.append(module)
 
         skip_connections = []
         for layer_index in range(len(explainable_layers) - 1):
-            if explainable_layers[layer_index].out_features != explainable_layers[layer_index + 1].in_features:
+            if (
+                explainable_layers[layer_index].out_features
+                != explainable_layers[layer_index + 1].in_features
+            ):
                 skip_connections.append(explainable_layers[layer_index + 1])
 
         return skip_connections

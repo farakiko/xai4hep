@@ -27,7 +27,7 @@ python run_lrp_fcn.py
 
 - **Running modified LRP for a trained MLPF model**
 ```bash
-python run_lrp_mlpf.py --run_lrp --make_rmaps --load_model=$model_dir --load_epoch=$epoch --outpath=$path_to_model --loader=$dataloader
+python run_lrp_mlpf.py --run_lrp --make_rmaps --load_model=$model_dir --load_epoch=$epoch
 ```
 
 ## Explaining ParticleNet
@@ -43,7 +43,7 @@ python run_lrp_mlpf.py --run_lrp --make_rmaps --load_model=$model_dir --load_epo
 cd particlenet/
 ./get_data.sh
 ```
-This will automatically create a `data/` folder under the `xai4hep/` repository, with a `toptagging/` folder that contains `train`,`val`,`test` folders; each containing a respective subset of the dataset.
+This will automatically create a `data/` folder under the `xai4hep/` repository, with a `toptagging/` folder that contains `train/`,`val/`,`test/` folders; each containing a respective subset of the dataset.
 
 - **Run a quick training**
 
@@ -53,11 +53,11 @@ mkdir experiments/
 cd particlenet
 python run_training.py --quick --model_prefix=ParticleNet_model
 ```
-This will run a quick training over a small sample of the dataset and store the model under `experiments`.
+This will run a quick training over a small sample of the dataset and store the model under `experiments/`.
 
 - **Run a quick LRP test**
 
 From the `xai4hep/` repository run
 ```bash
-python run_lrp_particlenet.py --quick --model_prefix=ParticleNet_model
+python run_lrp_particlenet.py --quick --model_prefix=ParticleNet_model --run_lrp --make_dr_Mij_plots --scaling_up
 ```

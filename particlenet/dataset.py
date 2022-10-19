@@ -6,8 +6,6 @@ import time
 from glob import glob
 from typing import Callable, Optional, Union
 
-import awkward as ak
-import awkward0
 import h5py
 import matplotlib
 import matplotlib.pyplot as plt
@@ -19,15 +17,7 @@ import torch.nn.functional as F
 import torch_geometric
 from torch import Tensor
 from torch.nn import Linear
-from torch_cluster import knn_graph
-from torch_geometric.data import Batch, Data, DataListLoader, Dataset
-from torch_geometric.loader import DataListLoader, DataLoader
-from torch_geometric.nn import EdgeConv, global_mean_pool
-from torch_geometric.nn.conv import MessagePassing
-from torch_geometric.typing import Adj, OptTensor, PairOptTensor, PairTensor
-from torch_geometric.utils import to_dense_adj
-from torch_scatter import scatter
-from uproot3_methods import TLorentzVectorArray
+from torch_geometric.data import Batch, Data, Dataset
 
 
 class TopTaggingDataset(Dataset):
@@ -77,9 +67,7 @@ class TopTaggingDataset(Dataset):
         """
 
         # https://github.com/jet-universe/particle_transformer/blob/main/utils/convert_top_datasets.py
-        import os
 
-        import awkward as ak
         import awkward0
         import numpy as np
         import pandas as pd

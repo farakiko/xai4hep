@@ -124,9 +124,13 @@ def training_loop(
         outpath: path to store the model weights and training plots
     """
 
-    # create directory to hold training plots
+    # create directory to hold loss plots
     if not os.path.exists(f"{outpath}/loss_plots/"):
         os.makedirs(f"{outpath}/loss_plots/")
+
+    # create directory to hold the model state at each epoch
+    if not os.path.exists(f"{outpath}/epoch_weights/"):
+        os.makedirs(f"{outpath}/epoch_weights/")
 
     t0_initial = time.time()
 
@@ -198,7 +202,7 @@ def training_loop(
             state_dict = model.module.state_dict()
         except AttributeError:
             state_dict = model.state_dict()
-        torch.save(state_dict, f"{outpath}/epoch_{epoch}_weights.pth")
+        torch.save(state_dict, f"{outpath}/epoch_weights/epoch_{epoch+1}_weights.pth")
 
         # make loss plots
         fig, ax = plt.subplots()
