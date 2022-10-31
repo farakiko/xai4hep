@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4559587.svg)](https://doi.org/10.5281/zenodo.7266537)
+
 # xai4hep
 
 XAI toolbox for interpreting state-of-the-art ML algorithms for high energy physics.
