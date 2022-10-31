@@ -18,7 +18,9 @@ import torch_geometric
 from torch_geometric.data import Batch, Data
 from torch_geometric.loader import DataListLoader, DataLoader
 
-from particlenet import ParticleNet, load_data, make_roc, save_model, training_loop
+from model import ParticleNet
+from training import training_loop
+from utils import load_data, make_roc, save_model
 
 plt.style.use(hep.style.CMS)
 plt.rcParams.update({"font.size": 20})

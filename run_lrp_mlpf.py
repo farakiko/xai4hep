@@ -85,10 +85,8 @@ def load_model(device, outpath, model_directory, load_epoch):
 if __name__ == "__main__":
     """
     e.g. to run lrp and make Rmaps
-    python -u run_lrp_mlpf.py --run_lrp --make_rmaps --load_model='MLPF_gen_ntrain_1_nepochs_1_clf_reg' --load_epoch=0 --outpath='/particleflowvol/test_tmp_delphes/experiments/' --loader='/particleflowvol/loader/test_loader.pth' --pid='chhadron' --size=400
+    python -u run_lrp_mlpf.py --run_lrp --make_rmaps --load_model='MLPF_model' --load_epoch=0 --pid='chhadron' --size=400
 
-    e.g. to only make Rmaps
-    python -u run_lrp_mlpf.py --make_rmaps --load_model='MLPF_gen_ntrain_1_nepochs_1_clf_reg' --load_epoch=0 --outpath='/particleflowvol/test_tmp_delphes/experiments/' --loader='/particleflowvol/loader/test_loader.pth' --pid='chhadron' --size=400
     """
 
     if args.run_lrp:
