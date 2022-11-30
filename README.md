@@ -25,6 +25,7 @@ conda activate xai
 Running LRP to explain a simple fully connected network (FCN) trained on a toy dataset with one highly discriminatory feature:
 
 ```bash
+cd xai4hep/
 python run_lrp_fcn.py
 ```
 
@@ -36,6 +37,7 @@ python run_lrp_fcn.py
 
 - **Running modified LRP for a trained MLPF model**
 ```bash
+cd xai4hep/
 python run_lrp_mlpf.py --run_lrp --make_rmaps --load_model=$model_dir --load_epoch=$epoch
 ```
 
@@ -49,24 +51,25 @@ python run_lrp_mlpf.py --run_lrp --make_rmaps --load_model=$model_dir --load_epo
 ### Quickstart
 - **Get and process the Top tagging dataset**
 ```bash
-cd particlenet/
+cd xai4hep/particlenet/
 ./get_data.sh
 ```
 This will automatically create a `data/` folder under the `xai4hep/` repository, with a `toptagging/` folder that contains `train/`,`val/`,`test/` folders; each containing a respective subset of the dataset.
 
 - **Run a quick training**
 
-From the `xai4hep/` repository run
+From the parent repository run
 ```bash
 mkdir experiments/
-cd particlenet
+cd xai4hep/particlenet
 python run_training.py --quick --model_prefix=ParticleNet_model
 ```
 This will run a quick training over a small sample of the dataset and store the model under `experiments/`.
 
 - **Run a quick LRP test**
 
-From the `xai4hep/` repository run
+From the parent repository run
 ```bash
+cd xai4hep/
 python run_lrp_particlenet.py --quick --model_prefix=ParticleNet_model --run_lrp --make_dr_Mij_plots --scaling_up
 ```
