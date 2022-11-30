@@ -6,6 +6,19 @@ XAI toolbox for interpreting state-of-the-art ML algorithms for high energy phys
 
 xai4hep provides necessary implementation of explainable AI (XAI) techniques for state-of-the-art graph neural networks (GNNs) developed for various tasks at the CERN LHC. Current models include: machine-learned particle flow (MLPF), and ParticleNet. The layerwise-relevance propagation (LRP) technique is implemented for such models, and additional XAI techniques are under development.
 
+### Explaining ParticleNet using LRP will produce the following edge-R-graphs.
+<figure>
+<img src="https://raw.githubusercontent.com/farakiko/xai4hep/dev/docs/_static/images/rgraphs.png" alt="Trulli" style="width:100%">
+<figcaption align = "center">Fig.1 - The jet constituents are represented as nodes in (eta, phi) space with interconnections as edges, whose intensities correspond to the connection's edge R score. Each node's intensity corresponds to the relative p<sub>T</sub> of the corresponding particle. Constituents belonging to the three different CA subjets are shown in blue, red, and green in descending p<sub>T</sub> order. We observe that by the last EdgeConv block the model learns to rely more on edge connections between the different subjets.</figcaption>
+</figure>
+
+<br/>
+
+### Explaining MLPF using LRP will produce the following R-maps.
+<figure>
+<img src="https://raw.githubusercontent.com/farakiko/xai4hep/dev/docs/_static/images/rmaps.png" alt="Trulli" style="width:100%">
+<figcaption align = "center">Fig.2 - This figure constitutes averaged R-maps for elements associated to charged hadrons (top), and neutral hadrons (bottom). We see that charged hadrons use more neighbor information than neutral hadrons.</figcaption>
+</figure>
 
 ## Setup
 1. If you have access to the kubernetes [PRP Nautlius cluster](https://nautilus.optiputer.net/), then refer to this gitlab repo for the setup https://gitlab.nrp-nautilus.io/fmokhtar/xai4hep
@@ -19,57 +32,4 @@ docker build docker/
 ```bash
 conda env create -f environment.yml
 conda activate xai
-```
-
-## Explaining simple FCN
-Running LRP to explain a simple fully connected network (FCN) trained on a toy dataset with one highly discriminatory feature:
-
-```bash
-cd xai4hep/
-python run_lrp_fcn.py
-```
-
-## Explaining MLPF
-
-<p align="center">
-  <img width="600" src="https://raw.githubusercontent.com/farakiko/xai4hep/dev/docs/_static/images/mlpf_rscores.png" />
-</p>
-
-- **Running modified LRP for a trained MLPF model**
-```bash
-cd xai4hep/
-python run_lrp_mlpf.py --run_lrp --make_rmaps --load_model=$model_dir --load_epoch=$epoch
-```
-
-## Explaining ParticleNet
-
-<p align="center">
-  <img width="500" src="https://raw.githubusercontent.com/farakiko/xai4hep/dev/docs/_static/images/particlenet_rscores.png" />
-</p>
-
-
-### Quickstart
-- **Get and process the Top tagging dataset**
-```bash
-cd xai4hep/particlenet/
-./get_data.sh
-```
-This will automatically create a `data/` folder under the `xai4hep/` repository, with a `toptagging/` folder that contains `train/`,`val/`,`test/` folders; each containing a respective subset of the dataset.
-
-- **Run a quick training**
-
-From the parent repository run
-```bash
-mkdir experiments/
-cd xai4hep/particlenet
-python run_training.py --quick --model_prefix=ParticleNet_model
-```
-This will run a quick training over a small sample of the dataset and store the model under `experiments/`.
-
-- **Run a quick LRP test**
-
-From the parent repository run
-```bash
-cd xai4hep/
-python run_lrp_particlenet.py --quick --model_prefix=ParticleNet_model --run_lrp --make_dr_Mij_plots --scaling_up
 ```
