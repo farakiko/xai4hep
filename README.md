@@ -2,6 +2,13 @@
 
 # xai4hep
 
+Code for:
+
+[1] Farouk Mokhtar et. al., *Do graph neural networks learn traditional jet substructure?*, [ML4PS @ NeurIPS 2022](https://ml4physicalsciences.github.io/2022/) [`arXiv:2211.09912`](https://arxiv.org/abs/2211.09912) \
+[2] Farouk Mokhtar et. al., *Explaining machine‑learned particle‑flow reconstruction*, [ML4PS @ NeurIPS 2021](https://ml4physicalsciences.github.io/2021/) [`arXiv:2111.12840`](https://arxiv.org/abs/2111.12840)
+
+
+## Overview
 XAI toolbox for interpreting state-of-the-art ML algorithms for high energy physics.
 
 xai4hep provides necessary implementation of explainable AI (XAI) techniques for state-of-the-art graph neural networks (GNNs) developed for various tasks at the CERN LHC. Current models include: machine-learned particle flow (MLPF), and ParticleNet. The layerwise-relevance propagation (LRP) technique is implemented for such models, and additional XAI techniques are under development.
