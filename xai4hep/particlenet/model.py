@@ -47,7 +47,10 @@ class EdgeConv_lrp(MessagePassing):
         if isinstance(x, Tensor):
             x: PairTensor = (x, x)
         # propagate_type: (x: PairTensor)
-        return self.propagate(edge_index, x=x, size=None), self.edge_activations
+        return (
+            self.propagate(edge_index, x=x, size=None),
+            self.edge_activations,
+        )
 
     def message(self, x_i: Tensor, x_j: Tensor) -> Tensor:
 
@@ -83,7 +86,13 @@ class EdgeConvBlock(nn.Module):
 
 class ParticleNet(nn.Module):
     def __init__(
-        self, for_LRP, node_feat_size, num_classes=1, k=16, depth=2, dropout=False
+        self,
+        for_LRP,
+        node_feat_size,
+        num_classes=1,
+        k=16,
+        depth=2,
+        dropout=False,
     ):
         super(ParticleNet, self).__init__()
         self.for_LRP = for_LRP

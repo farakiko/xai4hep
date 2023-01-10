@@ -83,7 +83,9 @@ class LRP_MLPF:
         # get the activations
         self.activations = activations
         self.num_layers = len(activations.keys())
-        self.in_features_dim = self.name2layer(list(activations.keys())[0]).in_features
+        self.in_features_dim = self.name2layer(
+            list(activations.keys())[0]
+        ).in_features
 
         print(f"Total number of layers: {self.num_layers}")
 
@@ -114,7 +116,9 @@ class LRP_MLPF:
 
         return R_tensor, preds, input
 
-    def explain_single_layer(self, R_tensor_old, layer_index, neuron_to_explain):
+    def explain_single_layer(
+        self, R_tensor_old, layer_index, neuron_to_explain
+    ):
         """
         Attempts to explain a single layer in the model by propagating Rscores backwards using the lrp-epsilon rule.
 
@@ -137,7 +141,9 @@ class LRP_MLPF:
             print(
                 f"Explaining layer {self.num_layers+1-layer_index}/{self.num_layers}: MessagePassing layer"
             )
-            input = self.msg_activations[layer_name[:-6]].to(self.device).detach()
+            input = (
+                self.msg_activations[layer_name[:-6]].to(self.device).detach()
+            )
             msg_passing_layer = True
         else:
             print(
@@ -173,7 +179,13 @@ class LRP_MLPF:
 
     @staticmethod
     def eps_rule(
-        self, layer, layer_name, x, R_tensor_old, neuron_to_explain, msg_passing_layer
+        self,
+        layer,
+        layer_name,
+        x,
+        R_tensor_old,
+        neuron_to_explain,
+        msg_passing_layer,
     ):
         """
         Implements the lrp-epsilon rule presented in the following reference: https://doi.org/10.1007/978-3-030-28954-6_10.
@@ -226,8 +238,12 @@ class LRP_MLPF:
         # checking conservation of Rscores for a given random node (# 17)
         rtol = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
         for tol in rtol:
-            if torch.allclose(R_tensor_new[17].sum(), R_tensor_old[17].sum(), rtol=tol):
-                print(f"- Rscores are conserved up to relative tolerance {str(tol)}")
+            if torch.allclose(
+                R_tensor_new[17].sum(), R_tensor_old[17].sum(), rtol=tol
+            ):
+                print(
+                    f"- Rscores are conserved up to relative tolerance {str(tol)}"
+                )
                 break
 
         if layer in self.skip_connections:

@@ -86,7 +86,9 @@ class LRP_ParticleNet:
 
         # initialize the R_scores vector using the output predictions
         R_scores = preds.detach().to(self.device)
-        print(f"Sum of R_scores of the output: {round(R_scores.sum().item(),4)}")
+        print(
+            f"Sum of R_scores of the output: {round(R_scores.sum().item(),4)}"
+        )
 
         # run LRP
         R_scores = self.redistribute_across_fc_layer(R_scores, "fc2")
@@ -96,7 +98,9 @@ class LRP_ParticleNet:
         print(f"R_scores after 'fc1' layer: {round(R_scores.sum().item(),4)}")
 
         R_scores = self.redistribute_across_global_pooling(R_scores)
-        print(f"R_scores after global_pooling {round(R_scores.sum().item(),4)}")
+        print(
+            f"R_scores after global_pooling {round(R_scores.sum().item(),4)}"
+        )
 
         # run LRP over EdgeConv blocks
         R_edges = {}
@@ -139,7 +143,9 @@ class LRP_ParticleNet:
         """
 
         # seperate the skip connection neurons from the others
-        self.skip_connection_R_scores = R_scores[:, self.model.kernel_sizes[idx + 1] :]
+        self.skip_connection_R_scores = R_scores[
+            :, self.model.kernel_sizes[idx + 1] :
+        ]
         R_scores = R_scores[:, : self.model.kernel_sizes[idx + 1]]
 
         R_edges = self.redistribute_across_edge_pooling(R_scores, idx)
@@ -192,9 +198,9 @@ class LRP_ParticleNet:
 
         latent_dim = R_old.shape[1]
 
-        R_new = torch.ones([self.num_nodes * self.num_neighbors, latent_dim]).to(
-            self.device
-        )
+        R_new = torch.ones(
+            [self.num_nodes * self.num_neighbors, latent_dim]
+        ).to(self.device)
 
         # loop over nodes
         for i in range(self.num_nodes):
@@ -234,7 +240,9 @@ class LRP_ParticleNet:
         # loop over nodes
         for i in range(self.num_nodes):
 
-            deno = x.sum(axis=0) + self.epsilon  # summing the activations of all nodes
+            deno = (
+                x.sum(axis=0) + self.epsilon
+            )  # summing the activations of all nodes
 
             # redistribute the R_scores of the whole jet over the nodes (normalized by deno)
             R_new[i] = R_old[0] * x[i] / deno
@@ -274,14 +282,17 @@ class LRP_ParticleNet:
             )  # sanity check of forward pass: (torch.matmul(x, W) + layer.bias) == layer(x)
 
             # (1) compute the denominator
-            denominator = torch.matmul(self.activations[name], W) + self.epsilon
+            denominator = (
+                torch.matmul(self.activations[name], W) + self.epsilon
+            )
 
             # (2) scale the R_scores
             scaledR = R_scores / denominator
 
             # (3) compute the new R_scores
             R_scores = (
-                torch.matmul(scaledR, torch.transpose(W, 0, 1)) * self.activations[name]
+                torch.matmul(scaledR, torch.transpose(W, 0, 1))
+                * self.activations[name]
             )
 
         return R_scores
@@ -304,7 +315,9 @@ class LRP_ParticleNet:
         )  # sanity check of forward pass: (torch.matmul(x, W) + layer.bias) == layer(x)
 
         # (1) compute the denominator
-        denominator = torch.matmul(self.activations[layer_name], W) + self.epsilon
+        denominator = (
+            torch.matmul(self.activations[layer_name], W) + self.epsilon
+        )
 
         # (2) scale the R_scores
         scaledR = R_scores / denominator

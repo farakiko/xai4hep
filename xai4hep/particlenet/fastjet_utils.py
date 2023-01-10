@@ -75,7 +75,9 @@ def get_subjets(px, py, pz, e, N_SUBJETS=3, JET_ALGO="CA", jet_radius=0.8):
     pseudojets = []
     pseudojets.append(
         [
-            fastjet.PseudoJet(particle.px, particle.py, particle.pz, particle.E)
+            fastjet.PseudoJet(
+                particle.px, particle.py, particle.pz, particle.E
+            )
             for particle in jet
         ]
     )
@@ -151,7 +153,9 @@ def get_subjets(px, py, pz, e, N_SUBJETS=3, JET_ALGO="CA", jet_radius=0.8):
     return subjet_idx, subjet_vectors, deta, dphi, dpt
 
 
-def scaling_up(outpath, epoch, N_values=15, N_SUBJETS=3, JET_ALGO="CA", jet_radius=0.8):
+def scaling_up(
+    outpath, epoch, N_values=15, N_SUBJETS=3, JET_ALGO="CA", jet_radius=0.8
+):
 
     """
     Computes the distribution of edges connecting different subjets for different values of N.
@@ -268,7 +272,9 @@ def scaling_up(outpath, epoch, N_values=15, N_SUBJETS=3, JET_ALGO="CA", jet_radi
     ax.plot(range(len(qcd_fraction)), qcd_fraction, label="QCD")
     ax.legend(title=legend_title)
     ax.set_xlabel(r"$N_{edges}$", fontsize=20)
-    ax.set_ylabel(r"$N_{edges \ between \ subjets}$ / $N_{edges}$", fontsize=20)
+    ax.set_ylabel(
+        r"$N_{edges \ between \ subjets}$ / $N_{edges}$", fontsize=20
+    )
     fig.tight_layout()
     plt.savefig(f"{outpath}/scaling_up_{save_as}.pdf")
     print(f"saved the plot as {outpath}/scaling_up_{save_as}.pdf")

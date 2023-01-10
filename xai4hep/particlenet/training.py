@@ -94,7 +94,9 @@ def train(multi_gpu, device, model, loader, optimizer):
 
         losses = losses + loss.detach()
 
-    print(f"Average inference time per batch is {round((t / len(loader)), 3)}s")
+    print(
+        f"Average inference time per batch is {round((t / len(loader)), 3)}s"
+    )
 
     losses = (losses / (len(loader))).cpu().item()
 
@@ -177,7 +179,9 @@ def training_loop(
                 state_dict = model.state_dict()
             torch.save(state_dict, f"{outpath}/best_epoch_weights.pth")
 
-            with open(f"{outpath}/best_epoch.json", "w") as fp:  # dump best epoch
+            with open(
+                f"{outpath}/best_epoch.json", "w"
+            ) as fp:  # dump best epoch
                 json.dump({"best_epoch": epoch}, fp)
         else:
             stale_epochs += 1
@@ -202,7 +206,9 @@ def training_loop(
             state_dict = model.module.state_dict()
         except AttributeError:
             state_dict = model.state_dict()
-        torch.save(state_dict, f"{outpath}/epoch_weights/epoch_{epoch+1}_weights.pth")
+        torch.save(
+            state_dict, f"{outpath}/epoch_weights/epoch_{epoch+1}_weights.pth"
+        )
 
         # make loss plots
         fig, ax = plt.subplots()

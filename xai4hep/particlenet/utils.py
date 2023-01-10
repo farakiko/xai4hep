@@ -17,7 +17,9 @@ from torch_geometric.data.data import BaseData
 from torch_geometric.loader import DataListLoader, DataLoader
 
 
-def save_model(args, outpath, model_kwargs, kernel_sizes, fc_size, dropout, depth):
+def save_model(
+    args, outpath, model_kwargs, kernel_sizes, fc_size, dropout, depth
+):
 
     if not args.overwrite and os.path.isfile(
         f"{args.outpath}/{args.model_prefix}/best_epoch_weights.pth"
@@ -35,10 +37,14 @@ def save_model(args, outpath, model_kwargs, kernel_sizes, fc_size, dropout, dept
         except:
             shutil.rmtree(os.path.join(outpath, f))
 
-    with open(f"{outpath}/model_kwargs.pkl", "wb") as f:  # dump model architecture
+    with open(
+        f"{outpath}/model_kwargs.pkl", "wb"
+    ) as f:  # dump model architecture
         pkl.dump(model_kwargs, f, protocol=pkl.HIGHEST_PROTOCOL)
 
-    with open(f"{outpath}/hyperparameters.json", "w") as fp:  # dump hyperparameters
+    with open(
+        f"{outpath}/hyperparameters.json", "w"
+    ) as fp:  # dump hyperparameters
         json.dump(
             {
                 "n_epochs": args.n_epochs,
@@ -152,7 +158,9 @@ def make_dr_Mij_plots(outpath, epoch, Top_N=5):
         edge_index = edge_index_list[i]["edge_conv_2"]
 
         def deltaR(eta1, eta2, phi1, phi2):
-            return torch.sqrt(torch.square(eta2 - eta1) + torch.square(phi2 - phi1))
+            return torch.sqrt(
+                torch.square(eta2 - eta1) + torch.square(phi2 - phi1)
+            )
 
         # pick the Top_N edge Rscores, get the indices
         top_edges = torch.topk(edge_Rscores, Top_N).indices

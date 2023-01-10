@@ -21,7 +21,9 @@ class FCN(nn.Module):
     Showcase an example of an fully connected network model, with a skip connection, that can be explained by LRP
     """
 
-    def __init__(self, input_dim=3, hidden_dim=256, embedding_dim=40, output_dim=2):
+    def __init__(
+        self, input_dim=3, hidden_dim=256, embedding_dim=40, output_dim=2
+    ):
         super(FCN, self).__init__()
 
         self.act = nn.ReLU
@@ -50,7 +52,9 @@ class FCN(nn.Module):
 
 
 def build_toy_dataset():
-    print("Building a toy dataset with a highly discriminatory feature (feature #3)")
+    print(
+        "Building a toy dataset with a highly discriminatory feature (feature #3)"
+    )
 
     # only 2 classes (binary classification)
     class1_y = np.zeros([1000, 1])
@@ -100,7 +104,9 @@ def quick_train(device, model, epochs, dataset, batch_size):
             # Forwardprop
             preds = model(X.float().to(device))
 
-            loss = torch.nn.functional.cross_entropy(preds.float(), Y.long().to(device))
+            loss = torch.nn.functional.cross_entropy(
+                preds.float(), Y.long().to(device)
+            )
 
             optimizer.zero_grad()
             loss.backward()
@@ -158,9 +164,12 @@ if __name__ == "__main__":
         axis=1, keepdim=True
     )
     avg_normalized_Rscores = (
-        normalized_Rscores.sum(axis=0, keepdim=True) / normalized_Rscores.shape[0]
+        normalized_Rscores.sum(axis=0, keepdim=True)
+        / normalized_Rscores.shape[0]
     )
-    print(f"Average normalized Rscores per feature: \n {avg_normalized_Rscores}")
+    print(
+        f"Average normalized Rscores per feature: \n {avg_normalized_Rscores}"
+    )
     print("As expected, feature # 3 is the most relevant :)")
 
     print("------------------------------------------")

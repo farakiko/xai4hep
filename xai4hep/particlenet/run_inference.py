@@ -57,7 +57,10 @@ parser.add_argument(
 )
 parser.add_argument("--batch_size", type=int, default=100)
 parser.add_argument(
-    "--quick", dest="quick", action="store_true", help="make inference on small sample"
+    "--quick",
+    dest="quick",
+    action="store_true",
+    help="make inference on small sample",
 )
 
 args = parser.parse_args()
@@ -76,7 +79,9 @@ if __name__ == "__main__":
     with open(f"{outpath}/model_kwargs.pkl", "rb") as f:
         model_kwargs = pkl.load(f)
 
-    state_dict = torch.load(f"{outpath}/best_epoch_weights.pth", map_location=device)
+    state_dict = torch.load(
+        f"{outpath}/best_epoch_weights.pth", map_location=device
+    )
 
     model = ParticleNet(**model_kwargs)
     model.load_state_dict(state_dict)
@@ -90,7 +95,9 @@ if __name__ == "__main__":
         )
         model = torch_geometric.nn.DataParallel(model)
     else:
-        test_loader = DataLoader(data_test, batch_size=args.batch_size, shuffle=True)
+        test_loader = DataLoader(
+            data_test, batch_size=args.batch_size, shuffle=True
+        )
 
     model.to(device)
     model.eval()

@@ -99,10 +99,14 @@ class GravNetConv_LRP(MessagePassing):
         # edge_index = knn_graph(s_l, self.k, b[0], b[1]).flip([0])
 
         edge_weight = (s_l[edge_index[0]] - s_r[edge_index[1]]).pow(2).sum(-1)
-        edge_weight = torch.exp(-10.0 * edge_weight)  # 10 gives a better spread
+        edge_weight = torch.exp(
+            -10.0 * edge_weight
+        )  # 10 gives a better spread
 
         # return the adjacency matrix of the graph for lrp purposes
-        A = to_dense_adj(edge_index.to("cpu"), edge_attr=edge_weight.to("cpu"))[0]
+        A = to_dense_adj(
+            edge_index.to("cpu"), edge_attr=edge_weight.to("cpu")
+        )[0]
 
         # message passing
         out = self.propagate(

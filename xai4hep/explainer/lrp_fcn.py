@@ -75,7 +75,9 @@ class LRP:
         # get the activations
         self.activations = activations
         self.num_layers = len(activations.keys())
-        self.in_features_dim = self.name2layer(list(activations.keys())[0]).in_features
+        self.in_features_dim = self.name2layer(
+            list(activations.keys())[0]
+        ).in_features
 
         print(f"Total number of layers: {self.num_layers}")
 
@@ -88,7 +90,9 @@ class LRP:
 
         # loop over layers in the model to propagate Rscores backward
         for layer_index in range(self.num_layers, 0, -1):
-            Rscores = self.explain_single_layer(Rscores, layer_index, neuron_to_explain)
+            Rscores = self.explain_single_layer(
+                Rscores, layer_index, neuron_to_explain
+            )
 
         print("Finished explaining all layers.")
 
@@ -97,7 +101,9 @@ class LRP:
 
         return Rscores
 
-    def explain_single_layer(self, Rscores_old, layer_index, neuron_to_explain):
+    def explain_single_layer(
+        self, Rscores_old, layer_index, neuron_to_explain
+    ):
         """
         Attempts to explain a single layer in the model by propagating Rscores backwards using the lrp-epsilon rule.
 
@@ -183,14 +189,17 @@ class LRP:
             if torch.allclose(
                 Rscores_old.sum(axis=1), Rscores_new.sum(axis=1), rtol=tol
             ):
-                print(f"- Rscores are conserved up to relative tolerance {str(tol)}")
+                print(
+                    f"- Rscores are conserved up to relative tolerance {str(tol)}"
+                )
                 break
 
         if layer in self.skip_connections:
             # set aside the relevance of the input_features in the skip connection
             # recall: it is assumed that the skip connections are defined in the following order torch.cat[(input_features, ...)] )
             self.skip_connections_relevance = (
-                self.skip_connections_relevance + Rscores_new[:, : self.in_features_dim]
+                self.skip_connections_relevance
+                + Rscores_new[:, : self.in_features_dim]
             )
             return Rscores_new[:, self.in_features_dim :]
 

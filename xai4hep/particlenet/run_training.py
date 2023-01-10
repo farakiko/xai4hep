@@ -62,14 +62,19 @@ parser.add_argument(
     action="store_true",
     help="overwrites the model",
 )
-parser.add_argument("--n_epochs", type=int, default=3, help="number of training epochs")
+parser.add_argument(
+    "--n_epochs", type=int, default=3, help="number of training epochs"
+)
 parser.add_argument("--batch_size", type=int, default=100)
 parser.add_argument(
     "--patience", type=int, default=20, help="patience before early stopping"
 )
 parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
 parser.add_argument(
-    "--nearest", type=int, default=16, help="k nearest neighbors in gravnet layer"
+    "--nearest",
+    type=int,
+    default=16,
+    help="k nearest neighbors in gravnet layer",
 )
 parser.add_argument(
     "--depth", type=int, default=1, help="depth of DNN in each EdgeConv block"
@@ -168,7 +173,9 @@ if __name__ == "__main__":
     with open(f"{outpath}/model_kwargs.pkl", "rb") as f:
         model_kwargs = pkl.load(f)
 
-    state_dict = torch.load(f"{outpath}/best_epoch_weights.pth", map_location=device)
+    state_dict = torch.load(
+        f"{outpath}/best_epoch_weights.pth", map_location=device
+    )
 
     model = ParticleNet(**model_kwargs)
     model.load_state_dict(state_dict)
@@ -182,7 +189,9 @@ if __name__ == "__main__":
         )
         model = torch_geometric.nn.DataParallel(model)
     else:
-        test_loader = DataLoader(data_test, batch_size=args.batch_size, shuffle=True)
+        test_loader = DataLoader(
+            data_test, batch_size=args.batch_size, shuffle=True
+        )
 
     model.to(device)
     model.eval()

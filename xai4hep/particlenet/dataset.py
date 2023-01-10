@@ -133,13 +133,27 @@ class TopTaggingDataset(Dataset):
                 Data(
                     x=torch.cat(
                         [
-                            torch.from_numpy(v["part_deta"][jet_index].reshape(-1, 1)),
-                            torch.from_numpy(v["part_dphi"][jet_index].reshape(-1, 1)),
-                            torch.from_numpy(part_pt_log[jet_index].reshape(-1, 1)),
-                            torch.from_numpy(part_e_log[jet_index].reshape(-1, 1)),
-                            torch.from_numpy(part_logptrel[jet_index].reshape(-1, 1)),
-                            torch.from_numpy(part_logerel[jet_index].reshape(-1, 1)),
-                            torch.from_numpy(part_deltaR[jet_index].reshape(-1, 1)),
+                            torch.from_numpy(
+                                v["part_deta"][jet_index].reshape(-1, 1)
+                            ),
+                            torch.from_numpy(
+                                v["part_dphi"][jet_index].reshape(-1, 1)
+                            ),
+                            torch.from_numpy(
+                                part_pt_log[jet_index].reshape(-1, 1)
+                            ),
+                            torch.from_numpy(
+                                part_e_log[jet_index].reshape(-1, 1)
+                            ),
+                            torch.from_numpy(
+                                part_logptrel[jet_index].reshape(-1, 1)
+                            ),
+                            torch.from_numpy(
+                                part_logerel[jet_index].reshape(-1, 1)
+                            ),
+                            torch.from_numpy(
+                                part_deltaR[jet_index].reshape(-1, 1)
+                            ),
                         ],
                         axis=1,
                     ),
@@ -147,7 +161,9 @@ class TopTaggingDataset(Dataset):
                 )
             )
 
-            if self.mode == "test":  # add (px,py,pz,E) info for lrp fastjet tests
+            if (
+                self.mode == "test"
+            ):  # add (px,py,pz,E) info for lrp fastjet tests
                 data[-1]["px"] = torch.from_numpy(v["part_px"][jet_index])
                 data[-1]["py"] = torch.from_numpy(v["part_py"][jet_index])
                 data[-1]["pz"] = torch.from_numpy(v["part_pz"][jet_index])
@@ -172,7 +188,8 @@ class TopTaggingDataset(Dataset):
 
     def get(self, idx):
         data = torch.load(
-            osp.join(self.processed_dir, "data_{}.pt".format(idx)), map_location="cpu"
+            osp.join(self.processed_dir, "data_{}.pt".format(idx)),
+            map_location="cpu",
         )
         return data
 
@@ -184,7 +201,9 @@ def parse_args():
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", type=str, required=True, help="Input data path")
+    parser.add_argument(
+        "--dataset", type=str, required=True, help="Input data path"
+    )
     parser.add_argument(
         "--mode", type=str, required=True, help="'train' or 'val' or 'test'?"
     )

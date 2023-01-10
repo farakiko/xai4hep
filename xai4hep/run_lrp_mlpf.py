@@ -13,15 +13,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch_geometric
+from explainer import LRP_MLPF
+from mlpf import MLPF, make_Rmaps
 from sklearn.metrics import accuracy_score
 from torch.nn import Linear as Lin
 from torch.nn import ReLU
 from torch.nn import Sequential as Seq
 from torch_geometric.data import Batch, Data, DataListLoader, DataLoader
 from torch_geometric.nn import GravNetConv
-
-from explainer import LRP_MLPF
-from mlpf import MLPF, make_Rmaps
 
 # this script runs lrp on a trained MLPF model
 
@@ -39,15 +38,27 @@ parser.add_argument(
     default="./experiments/",
     help="path to the trained model directory",
 )
-parser.add_argument("--load_model", type=str, default="", help="Which model to load")
 parser.add_argument(
-    "--load_epoch", type=int, default=0, help="Which epoch of the model to load"
+    "--load_model", type=str, default="", help="Which model to load"
 )
 parser.add_argument(
-    "--out_neuron", type=int, default=0, help="the output neuron you wish to explain"
+    "--load_epoch",
+    type=int,
+    default=0,
+    help="Which epoch of the model to load",
 )
-parser.add_argument("--pid", type=str, default="chhadron", help="Which model to load")
-parser.add_argument("--run_lrp", dest="run_lrp", action="store_true", help="runs lrp")
+parser.add_argument(
+    "--out_neuron",
+    type=int,
+    default=0,
+    help="the output neuron you wish to explain",
+)
+parser.add_argument(
+    "--pid", type=str, default="chhadron", help="Which model to load"
+)
+parser.add_argument(
+    "--run_lrp", dest="run_lrp", action="store_true", help="runs lrp"
+)
 parser.add_argument(
     "--make_rmaps", dest="make_rmaps", action="store_true", help="makes rmaps"
 )

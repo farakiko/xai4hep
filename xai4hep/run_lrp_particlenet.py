@@ -16,11 +16,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch_geometric
-from torch_geometric.data import Batch, Data
-from torch_geometric.loader import DataLoader
-
 from explainer import LRP_ParticleNet
 from particlenet import ParticleNet, load_data, make_dr_Mij_plots, scaling_up
+from torch_geometric.data import Batch, Data
+from torch_geometric.loader import DataLoader
 
 warnings.filterwarnings("ignore")
 
@@ -37,7 +36,10 @@ else:
 parser = argparse.ArgumentParser()
 
 parser.add_argument(
-    "--dataset", type=str, default="./data/toptagging/", help="path to datafile"
+    "--dataset",
+    type=str,
+    default="./data/toptagging/",
+    help="path to datafile",
 )
 parser.add_argument(
     "--outpath",
@@ -192,7 +194,9 @@ if __name__ == "__main__":
         with open(f"{PATH}/edge_index.pkl", "wb") as handle:
             pkl.dump(edge_index_list, handle)
 
-        print(f"Finished computing the Rscores for the model at epoch {args.epoch}")
+        print(
+            f"Finished computing the Rscores for the model at epoch {args.epoch}"
+        )
 
     # produce the lrp deltaR and Mij result plots
     if args.make_dr_Mij_plots:
