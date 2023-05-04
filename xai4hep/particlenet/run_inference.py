@@ -1,24 +1,15 @@
 import argparse
-import json
-import os
 import os.path as osp
 import pickle as pkl
-import sys
-import time
-from glob import glob
 
 import matplotlib
 import matplotlib.pyplot as plt
 import mplhep as hep
 import numpy as np
-import pandas as pd
 import torch
-import torch.nn as nn
 import torch_geometric
-from torch_geometric.data import Batch, Data
-from torch_geometric.loader import DataListLoader, DataLoader
-
 from model import ParticleNet
+from torch_geometric.loader import DataListLoader, DataLoader
 from utils import load_data, make_roc
 
 plt.style.use(hep.style.CMS)
@@ -43,22 +34,11 @@ else:
 
 # define argparse
 parser = argparse.ArgumentParser()
-parser.add_argument(
-    "--outpath", type=str, default="../experiments/", help="output folder"
-)
-parser.add_argument(
-    "--model_prefix",
-    type=str,
-    default="ParticleNet_model",
-    help="directory to hold the model and plots",
-)
-parser.add_argument(
-    "--dataset", type=str, default="../data/toptagging/", help="dataset path"
-)
+parser.add_argument("--outpath", type=str, default="../experiments/", help="output folder")
+parser.add_argument("--model_prefix", type=str, default="ParticleNet_model", help="directory to hold the model and plots")
+parser.add_argument("--dataset", type=str, default="../data/toptagging/", help="dataset path")
 parser.add_argument("--batch_size", type=int, default=100)
-parser.add_argument(
-    "--quick", dest="quick", action="store_true", help="make inference on small sample"
-)
+parser.add_argument("--quick", dest="quick", action="store_true", help="make inference on small sample")
 
 args = parser.parse_args()
 
@@ -66,7 +46,7 @@ args = parser.parse_args()
 if __name__ == "__main__":
     """
     e.g.
-    python run_inference.py --quick --model_prefix='ParticleNet_model' --dataset="/xai4hepvol/toptagging/" --outpath="/xai4hepvol/experiments/"
+    python run_inference.py --quick --model_prefix='ParticleNet_model' --dataset="toptagging/" --outpath="experiments/"
 
     """
 
@@ -85,9 +65,7 @@ if __name__ == "__main__":
     data_test = load_data(args.dataset, "test", 4, args.quick)
 
     if multi_gpu:
-        test_loader = DataListLoader(
-            data_test, batch_size=args.batch_size, shuffle=True
-        )
+        test_loader = DataListLoader(data_test, batch_size=args.batch_size, shuffle=True)
         model = torch_geometric.nn.DataParallel(model)
     else:
         test_loader = DataLoader(data_test, batch_size=args.batch_size, shuffle=True)
@@ -99,7 +77,6 @@ if __name__ == "__main__":
     y_score = None
     y_test = None
     for i, batch in enumerate(test_loader):
-
         if multi_gpu:
             batch = batch
         else:
@@ -108,7 +85,7 @@ if __name__ == "__main__":
         preds, targets = model(batch)
         preds = preds.detach().cpu()
 
-        if y_score == None:
+        if y_score is None:
             y_score = preds[:].detach().cpu().reshape(-1)
             y_test = targets.detach().cpu()
         else:

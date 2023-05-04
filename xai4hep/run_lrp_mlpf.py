@@ -1,59 +1,24 @@
 import argparse
-import os
-import os.path as osp
 import pickle as pkl
-import sys
-from glob import glob
 
-import matplotlib.pyplot as plt
-import mplhep as hep
-import numpy as np
-import pandas as pd
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch_geometric
-from sklearn.metrics import accuracy_score
-from torch.nn import Linear as Lin
-from torch.nn import ReLU
-from torch.nn import Sequential as Seq
-from torch_geometric.data import Batch, Data, DataListLoader, DataLoader
-from torch_geometric.nn import GravNetConv
-
 from explainer import LRP_MLPF
 from mlpf import MLPF, make_Rmaps
+from torch_geometric.data import Batch
 
 # this script runs lrp on a trained MLPF model
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument(
-    "--loader",
-    type=str,
-    default="junk/test_loader.pth",
-    help="path to a saved pytorch DataLoader",
-)
-parser.add_argument(
-    "--outpath",
-    type=str,
-    default="./experiments/",
-    help="path to the trained model directory",
-)
+parser.add_argument("--loader", type=str, default="junk/test_loader.pth", help="path to a saved pytorch DataLoader")
+parser.add_argument("--outpath", type=str, default="./experiments/", help="path to the trained model directory")
 parser.add_argument("--load_model", type=str, default="", help="Which model to load")
-parser.add_argument(
-    "--load_epoch", type=int, default=0, help="Which epoch of the model to load"
-)
-parser.add_argument(
-    "--out_neuron", type=int, default=0, help="the output neuron you wish to explain"
-)
+parser.add_argument("--load_epoch", type=int, default=0, help="Which epoch of the model to load")
+parser.add_argument("--out_neuron", type=int, default=0, help="the output neuron you wish to explain")
 parser.add_argument("--pid", type=str, default="chhadron", help="Which model to load")
 parser.add_argument("--run_lrp", dest="run_lrp", action="store_true", help="runs lrp")
-parser.add_argument(
-    "--make_rmaps", dest="make_rmaps", action="store_true", help="makes rmaps"
-)
-parser.add_argument(
-    "--size", type=int, default=0, help="batch the events to fit in memory"
-)
+parser.add_argument("--make_rmaps", dest="make_rmaps", action="store_true", help="makes rmaps")
+parser.add_argument("--size", type=int, default=0, help="batch the events to fit in memory")
 
 args = parser.parse_args()
 
@@ -67,9 +32,7 @@ def load_model(device, outpath, model_directory, load_epoch):
 
     state_dict = torch.load(PATH, map_location=device)
 
-    if (
-        "DataParallel" in model_directory
-    ):  # if the model was trained using DataParallel then we do this
+    if "DataParallel" in model_directory:  # if the model was trained using DataParallel then we do this
         state_dict = torch.load(PATH, map_location=device)
         from collections import OrderedDict
 
@@ -105,9 +68,7 @@ if __name__ == "__main__":
 
         # load a pretrained model and update the outpath
         outpath = args.outpath + args.load_model
-        state_dict, model_kwargs, outpath = load_model(
-            device, outpath, args.load_model, args.load_epoch
-        )
+        state_dict, model_kwargs, outpath = load_model(device, outpath, args.load_model, args.load_epoch)
         model = MLPF(**model_kwargs)
         model.load_state_dict(state_dict)
         model.to(device)
@@ -135,9 +96,7 @@ if __name__ == "__main__":
             # run lrp on sample model
             model.eval()
             lrp_instance = LRP_MLPF(device, model, epsilon=1e-9)
-            Rtensor, pred, input = lrp_instance.explain(
-                event, neuron_to_explain=args.out_neuron
-            )
+            Rtensor, pred, input = lrp_instance.explain(event, neuron_to_explain=args.out_neuron)
 
             Rtensors_list.append(Rtensor.detach().to("cpu"))
             preds_list.append(pred.detach().to("cpu"))

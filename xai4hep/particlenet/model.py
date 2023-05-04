@@ -1,35 +1,14 @@
-import os
-import os.path as osp
-import pickle as pkl
-import sys
-import time
-from glob import glob
-from typing import Callable, Optional, Union
+from typing import Callable, Union
 
-import h5py
-import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch_geometric
 from torch import Tensor
-from torch.nn import Linear
 from torch_cluster import knn_graph
-from torch_geometric.data import Batch, Data, DataListLoader, Dataset
-from torch_geometric.loader import DataListLoader, DataLoader
-from torch_geometric.nn import EdgeConv, global_mean_pool
+from torch_geometric.nn import global_mean_pool
 from torch_geometric.nn.conv import MessagePassing
-from torch_geometric.typing import Adj, OptTensor, PairOptTensor, PairTensor
-from torch_geometric.utils import to_dense_adj
-from torch_scatter import scatter
-
-try:
-    from torch_cluster import knn
-except ImportError:
-    knn = None
+from torch_geometric.typing import Adj, PairTensor
 
 
 class EdgeConv_lrp(MessagePassing):
@@ -47,10 +26,12 @@ class EdgeConv_lrp(MessagePassing):
         if isinstance(x, Tensor):
             x: PairTensor = (x, x)
         # propagate_type: (x: PairTensor)
-        return self.propagate(edge_index, x=x, size=None), self.edge_activations
+        return (
+            self.propagate(edge_index, x=x, size=None),
+            self.edge_activations,
+        )
 
     def message(self, x_i: Tensor, x_j: Tensor) -> Tensor:
-
         # self.edge_activations = self.nn(torch.cat([x_i, x_j - x_i], dim=-1))
         # return self.nn(torch.cat([x_i, x_j - x_i], dim=-1))
         self.edge_activations = self.nn(torch.cat([x_i, x_j], dim=-1))
@@ -83,7 +64,13 @@ class EdgeConvBlock(nn.Module):
 
 class ParticleNet(nn.Module):
     def __init__(
-        self, for_LRP, node_feat_size, num_classes=1, k=16, depth=2, dropout=False
+        self,
+        for_LRP,
+        node_feat_size,
+        num_classes=1,
+        k=16,
+        depth=2,
+        dropout=False,
     ):
         super(ParticleNet, self).__init__()
         self.for_LRP = for_LRP
@@ -95,9 +82,7 @@ class ParticleNet(nn.Module):
         self.num_edge_conv_blocks = 3
 
         self.kernel_sizes = [self.node_feat_size, 64, 128, 256]
-        self.input_sizes = np.cumsum(
-            self.kernel_sizes
-        )  # [4, 4+64, 4+64+128, 4+64+128+256]
+        self.input_sizes = np.cumsum(self.kernel_sizes)  # [4, 4+64, 4+64+128, 4+64+128+256]
 
         self.fc_size = 256
 
@@ -110,11 +95,7 @@ class ParticleNet(nn.Module):
         # define the edgeconvblocks
         self.edge_conv_blocks = nn.ModuleList()
         for i in range(0, self.num_edge_conv_blocks):
-            self.edge_conv_blocks.append(
-                EdgeConvBlock(
-                    self.input_sizes[i], self.kernel_sizes[i + 1], depth=depth
-                )
-            )
+            self.edge_conv_blocks.append(EdgeConvBlock(self.input_sizes[i], self.kernel_sizes[i + 1], depth=depth))
 
         # define the fully connected networks (post-edgeconvs)
         self.fc1 = nn.Linear(self.input_sizes[-1], self.fc_size)
@@ -123,7 +104,6 @@ class ParticleNet(nn.Module):
         self.sig = nn.Sigmoid()
 
     def forward(self, batch):
-
         x = batch.x
         y = batch.y
         batch = batch.batch
@@ -141,21 +121,12 @@ class ParticleNet(nn.Module):
         edge_index = {}
 
         for i in range(self.num_edge_conv_blocks):
-
             # using only angular coords for knn in first edgeconv block
-            edge_index[f"edge_conv_{i}"] = (
-                knn_graph(x[:, :2], self.k, batch)
-                if i == 0
-                else knn_graph(x, self.k, batch)
-            )
+            edge_index[f"edge_conv_{i}"] = knn_graph(x[:, :2], self.k, batch) if i == 0 else knn_graph(x, self.k, batch)
 
-            out, edge_activations[f"edge_conv_{i}"] = self.edge_conv_blocks[i](
-                x, edge_index[f"edge_conv_{i}"]
-            )
+            out, edge_activations[f"edge_conv_{i}"] = self.edge_conv_blocks[i](x, edge_index[f"edge_conv_{i}"])
 
-            x = torch.cat(
-                (out, x), dim=1
-            )  # concatenating with latent features i.e. skip connections per EdgeConvBlock
+            x = torch.cat((out, x), dim=1)  # concatenating with latent features i.e. skip connections per EdgeConvBlock
 
             edge_block_activations[f"edge_conv_{i}"] = x
 

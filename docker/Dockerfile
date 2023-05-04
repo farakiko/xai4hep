@@ -13,7 +13,7 @@ RUN mamba install -c pytorch -c conda-forge \
     torchvision \
     torchaudio \
     cudatoolkit=11.6
-    
+
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
@@ -24,5 +24,5 @@ RUN pip install -q \
     torch-spline-conv \
     pyg-nightly \
     -f https://data.pyg.org/whl/torch-1.12.0+cu116.html
-    
+
 RUN fix-permissions /home/$NB_USER

@@ -1,17 +1,8 @@
-import os
-import os.path as osp
-import pickle as pkl
-import sys
-from glob import glob
-
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn as nn
-from sklearn.metrics import accuracy_score
-from torch.utils.data import DataLoader
-
 from explainer import LRP
+from torch.utils.data import DataLoader
 
 # this script builds a toy dataset, trains a simple FFN model on the dataset, and tests LRP
 
@@ -154,12 +145,8 @@ if __name__ == "__main__":
 
     print("------------------------------------------")
 
-    normalized_Rscores = Rscores0.absolute() / Rscores0.absolute().sum(
-        axis=1, keepdim=True
-    )
-    avg_normalized_Rscores = (
-        normalized_Rscores.sum(axis=0, keepdim=True) / normalized_Rscores.shape[0]
-    )
+    normalized_Rscores = Rscores0.absolute() / Rscores0.absolute().sum(axis=1, keepdim=True)
+    avg_normalized_Rscores = normalized_Rscores.sum(axis=0, keepdim=True) / normalized_Rscores.shape[0]
     print(f"Average normalized Rscores per feature: \n {avg_normalized_Rscores}")
     print("As expected, feature # 3 is the most relevant :)")
 

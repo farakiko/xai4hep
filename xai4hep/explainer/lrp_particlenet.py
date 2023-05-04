@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 
 
@@ -10,7 +9,6 @@ class LRP_ParticleNet:
     """
 
     def __init__(self, device, model, epsilon):
-
         self.device = device
         self.model = model.to(device)
         self.epsilon = epsilon  # for stability reasons in the lrp-epsilon rule (by default: a very small number)
@@ -22,7 +20,8 @@ class LRP_ParticleNet:
     def explain(self, input):
         """
         Primary function to call on an LRP instance to start explaining predictions.
-        It registers hooks and runs a forward pass on the input, then it attempts to explain the whole model by looping over EdgeConv blocks.
+        It registers hooks and runs a forward pass on the input, then it attempts to
+        explain the whole model by looping over EdgeConv blocks.
 
         Args:
             input: tensor containing the input sample you wish to explain
@@ -51,9 +50,7 @@ class LRP_ParticleNet:
                         if f".{num}" in name:
                             for n, m in module.named_modules():
                                 if ("nn" in n) and (n != "edge_conv.nn"):
-                                    m.register_forward_hook(
-                                        get_activation(name + "." + n)
-                                    )
+                                    m.register_forward_hook(get_activation(name + "." + n))
             elif "fc" in name:
                 module.register_forward_hook(get_activation(name))
 
@@ -104,12 +101,8 @@ class LRP_ParticleNet:
 
         # loop over EdgeConv blocks
         for idx in range(self.num_convs - 1, -1, -1):
-            R_scores, R_edges[f"edge_conv_{idx}"] = self.redistribute_EdgeConv(
-                R_scores, idx
-            )
-            print(
-                f"R_scores after EdgeConv # {idx}: {round((R_scores.sum()).item(),4)}"
-            )
+            R_scores, R_edges[f"edge_conv_{idx}"] = self.redistribute_EdgeConv(R_scores, idx)
+            print(f"R_scores after EdgeConv # {idx}: {round((R_scores.sum()).item(),4)}")
 
         # detach and put on cpu to save
         for key, value in self.edge_index.items():
@@ -156,13 +149,17 @@ class LRP_ParticleNet:
 
     def redistribute_concat_step(self, R_old, idx):
         """
-        Useful to redistribute the R_scores backward from the concatenation step that happens at the begining of the EdgeConv block.
+        Useful to redistribute the R_scores backward from the concatenation step that happens
+        at the begining of the EdgeConv block.
 
-        Function that takes R_old ~ (num_nodes*k, latent_dim)
-        and returns R_new ~ (num_nodes, latent_dim/2)
+        Args
+            R_old ~ (num_nodes*k, latent_dim)
+
+        Returns
+            R_new ~ (num_nodes, latent_dim/2)
 
         Note: latent_dim should be an even number as it is a concat of two node features.
-        Note: Assumes that the concat is [x_i, x_j] not [x_i, x_i-x_j]
+        Note: Assumes that the concat is [x_i, x_j] not [x_i, x_i-x_j].
         """
 
         latent_dim_old = R_old.shape[-1]
@@ -184,35 +181,33 @@ class LRP_ParticleNet:
 
     def redistribute_across_edge_pooling(self, R_old, idx):
         """
-        Useful to reditsribute the R_scores backward from the averaging of neighboring edges. It redistributes R_scores from the nodes over the edges.
+        Useful to reditsribute the R_scores backward from the averaging of neighboring edges.
+        It redistributes R_scores from the nodes over the edges.
 
-        takes R_old ~ (num_nodes, latent_dim) and edge_activations ~ (num_nodes*k, latent_dim)
-        returns R_new ~ (num_nodes*k, latent_dim)
+        Args
+            R_old ~ (num_nodes, latent_dim) and edge_activations ~ (num_nodes*k, latent_dim)
+
+        Returns
+            R_new ~ (num_nodes*k, latent_dim)
         """
 
         latent_dim = R_old.shape[1]
 
-        R_new = torch.ones([self.num_nodes * self.num_neighbors, latent_dim]).to(
-            self.device
-        )
+        R_new = torch.ones([self.num_nodes * self.num_neighbors, latent_dim]).to(self.device)
 
         # loop over nodes
         for i in range(self.num_nodes):
             # loop over neighbors
             for j in range(self.num_neighbors):
-
                 # summing the edge_activations node_i (i.e. the edge_activations of the neighboring nodes)
                 deno = self.edge_activations[f"edge_conv_{idx}"][
-                    (i * self.num_neighbors) : (i * self.num_neighbors)
-                    + self.num_neighbors
+                    (i * self.num_neighbors) : (i * self.num_neighbors) + self.num_neighbors
                 ].sum(axis=0)
 
-                # redistribute the R_scores of node_i according to how activated each edge_activation was (normalized by deno)
+                # redistribute the R_scores of node_i according to how activated each edge_activation (normalized by deno)
                 R_new[(i * self.num_neighbors) + j] = (
                     R_old[i]
-                    * self.edge_activations[f"edge_conv_{idx}"][
-                        (i * self.num_neighbors) + j
-                    ]
+                    * self.edge_activations[f"edge_conv_{idx}"][(i * self.num_neighbors) + j]
                     / (deno + self.epsilon)
                 )
 
@@ -220,10 +215,14 @@ class LRP_ParticleNet:
 
     def redistribute_across_global_pooling(self, R_old):
         """
-        Useful to reditsribute the R_scores backward from the averaging of all nodes. It redistributes R_scores from the whole jet over the nodes.
+        Useful to reditsribute the R_scores backward from the averaging of all nodes.
+        It redistributes R_scores from the whole jet over the nodes.
 
-        takes R_old ~ (1, latent_dim)
-        and returns R_new ~ (num_nodes, latent_dim)
+        Args
+            R_old ~ (1, latent_dim)
+
+        Returns
+            R_new ~ (num_nodes, latent_dim)
         """
 
         latent_dim = R_old.shape[1]
@@ -233,7 +232,6 @@ class LRP_ParticleNet:
 
         # loop over nodes
         for i in range(self.num_nodes):
-
             deno = x.sum(axis=0) + self.epsilon  # summing the activations of all nodes
 
             # redistribute the R_scores of the whole jet over the nodes (normalized by deno)
@@ -250,8 +248,11 @@ class LRP_ParticleNet:
         Implements the lrp-epsilon rule presented in the following reference: https://doi.org/10.1007/978-3-030-28954-6_10.
         Follows simple DNN LRP redistribution over the Sequential FC layers of a given EdgeConv.
 
-        takes R_old ~ (num_nodes*k, latent_dim_old)
-        and returns R_new ~ (num_nodes*k, latent_dim_new)
+        Args
+            R_old ~ (num_nodes*k, latent_dim_old)
+
+        Returns
+            R_new ~ (num_nodes*k, latent_dim_new)
         """
 
         layer_names = []
@@ -266,12 +267,9 @@ class LRP_ParticleNet:
         layer_names.reverse()
 
         for i, name in enumerate(layer_names):
-
             layer = self.name2layer(name)
             W = layer.weight.detach()  # get weight matrix
-            W = torch.transpose(
-                W, 0, 1
-            )  # sanity check of forward pass: (torch.matmul(x, W) + layer.bias) == layer(x)
+            W = torch.transpose(W, 0, 1)  # sanity check of forward pass: (torch.matmul(x, W) + layer.bias) == layer(x)
 
             # (1) compute the denominator
             denominator = torch.matmul(self.activations[name], W) + self.epsilon
@@ -280,9 +278,7 @@ class LRP_ParticleNet:
             scaledR = R_scores / denominator
 
             # (3) compute the new R_scores
-            R_scores = (
-                torch.matmul(scaledR, torch.transpose(W, 0, 1)) * self.activations[name]
-            )
+            R_scores = torch.matmul(scaledR, torch.transpose(W, 0, 1)) * self.activations[name]
 
         return R_scores
 
@@ -299,9 +295,7 @@ class LRP_ParticleNet:
         layer = self.name2layer(layer_name)
 
         W = layer.weight.detach()  # get weight matrix
-        W = torch.transpose(
-            W, 0, 1
-        )  # sanity check of forward pass: (torch.matmul(x, W) + layer.bias) == layer(x)
+        W = torch.transpose(W, 0, 1)  # sanity check of forward pass: (torch.matmul(x, W) + layer.bias) == layer(x)
 
         # (1) compute the denominator
         denominator = torch.matmul(self.activations[layer_name], W) + self.epsilon
@@ -310,10 +304,7 @@ class LRP_ParticleNet:
         scaledR = R_scores / denominator
 
         # (3) compute the new R_scores
-        R_scores = (
-            torch.matmul(scaledR, torch.transpose(W, 0, 1))
-            * self.activations[layer_name]
-        )
+        R_scores = torch.matmul(scaledR, torch.transpose(W, 0, 1)) * self.activations[layer_name]
 
         return R_scores
 
