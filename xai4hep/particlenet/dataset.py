@@ -1,23 +1,8 @@
-import os
 import os.path as osp
-import pickle as pkl
-import sys
-import time
 from glob import glob
-from typing import Callable, Optional, Union
 
-import h5py
-import matplotlib
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch_geometric
-from torch import Tensor
-from torch.nn import Linear
-from torch_geometric.data import Batch, Data, Dataset
+from torch_geometric.data import Data, Dataset
 
 
 class TopTaggingDataset(Dataset):
@@ -46,12 +31,7 @@ class TopTaggingDataset(Dataset):
     @property
     def processed_file_names(self):
         proc_list = glob(osp.join(self.processed_dir, "*.pt"))
-        return sorted(
-            [
-                processed_path.replace(self.processed_dir, ".")
-                for processed_path in proc_list
-            ]
-        )
+        return sorted([processed_path.replace(self.processed_dir, ".") for processed_path in proc_list])
 
     def prepare_ptfiles(self):
         """
@@ -128,32 +108,17 @@ class TopTaggingDataset(Dataset):
         data = []
         c = 0
         for jet_index in range(len(df - 1)):
-
             data.append(
                 Data(
                     x=torch.cat(
                         [
-                            torch.from_numpy(
-                                v["part_deta"][jet_index].reshape(-1, 1)
-                            ),
-                            torch.from_numpy(
-                                v["part_dphi"][jet_index].reshape(-1, 1)
-                            ),
-                            torch.from_numpy(
-                                part_pt_log[jet_index].reshape(-1, 1)
-                            ),
-                            torch.from_numpy(
-                                part_e_log[jet_index].reshape(-1, 1)
-                            ),
-                            torch.from_numpy(
-                                part_logptrel[jet_index].reshape(-1, 1)
-                            ),
-                            torch.from_numpy(
-                                part_logerel[jet_index].reshape(-1, 1)
-                            ),
-                            torch.from_numpy(
-                                part_deltaR[jet_index].reshape(-1, 1)
-                            ),
+                            torch.from_numpy(v["part_deta"][jet_index].reshape(-1, 1)),
+                            torch.from_numpy(v["part_dphi"][jet_index].reshape(-1, 1)),
+                            torch.from_numpy(part_pt_log[jet_index].reshape(-1, 1)),
+                            torch.from_numpy(part_e_log[jet_index].reshape(-1, 1)),
+                            torch.from_numpy(part_logptrel[jet_index].reshape(-1, 1)),
+                            torch.from_numpy(part_logerel[jet_index].reshape(-1, 1)),
+                            torch.from_numpy(part_deltaR[jet_index].reshape(-1, 1)),
                         ],
                         axis=1,
                     ),
@@ -161,9 +126,7 @@ class TopTaggingDataset(Dataset):
                 )
             )
 
-            if (
-                self.mode == "test"
-            ):  # add (px,py,pz,E) info for lrp fastjet tests
+            if self.mode == "test":  # add (px,py,pz,E) info for lrp fastjet tests
                 data[-1]["px"] = torch.from_numpy(v["part_px"][jet_index])
                 data[-1]["py"] = torch.from_numpy(v["part_py"][jet_index])
                 data[-1]["pz"] = torch.from_numpy(v["part_pz"][jet_index])
@@ -177,14 +140,7 @@ class TopTaggingDataset(Dataset):
 
     def __len__(self):
         proc_list = glob(osp.join(self.processed_dir, "*.pt"))
-        return len(
-            sorted(
-                [
-                    processed_path.replace(self.processed_dir, ".")
-                    for processed_path in proc_list
-                ]
-            )
-        )
+        return len(sorted([processed_path.replace(self.processed_dir, ".") for processed_path in proc_list]))
 
     def get(self, idx):
         data = torch.load(
@@ -201,18 +157,13 @@ def parse_args():
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--dataset", type=str, required=True, help="Input data path"
-    )
-    parser.add_argument(
-        "--mode", type=str, required=True, help="'train' or 'val' or 'test'?"
-    )
+    parser.add_argument("--dataset", type=str, required=True, help="Input data path")
+    parser.add_argument("--mode", type=str, required=True, help="'train' or 'val' or 'test'?")
     args = parser.parse_args()
     return args
 
 
 if __name__ == "__main__":
-
     """
     To process train data: python dataset.py --dataset ../data/toptagging/ --mode train
     To process val data:   python dataset.py --dataset ../data/toptagging/ --mode val
@@ -223,8 +174,3 @@ if __name__ == "__main__":
 
     topdataset = TopTaggingDataset(root=args.dataset, mode=args.mode)
     topdataset.prepare_ptfiles()
-
-
-# ! ls .. / data / toptagging / test
-# df = pd.read_hdf(f"../data/toptagging/test/raw/test.h5", key='table')
-# df.keys

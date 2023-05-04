@@ -3,22 +3,12 @@ import json
 import os
 import os.path as osp
 import pickle as pkl
-import sys
 import time
 import warnings
-from glob import glob
 
-import matplotlib.pyplot as plt
-import mplhep as hep
-import numpy as np
-import pandas as pd
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch_geometric
 from explainer import LRP_ParticleNet
 from particlenet import ParticleNet, load_data, make_dr_Mij_plots, scaling_up
-from torch_geometric.data import Batch, Data
 from torch_geometric.loader import DataLoader
 
 warnings.filterwarnings("ignore")
@@ -35,42 +25,19 @@ else:
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument(
-    "--dataset",
-    type=str,
-    default="./data/toptagging/",
-    help="path to datafile",
-)
-parser.add_argument(
-    "--outpath",
-    type=str,
-    default="./experiments/",
-    help="path to the trained model directory",
-)
-parser.add_argument(
-    "--model_prefix",
-    type=str,
-    default="ParticleNet_dropout1",
-    help="Which model to load",
-)
-parser.add_argument(
-    "--epoch",
-    type=int,
-    default=-1,
-    help="epoch to run Rscores for... -1=best_epoch, 0=untrained, otherwise whatever epoch",
-)
+parser.add_argument("--dataset", type=str, default="./data/toptagging/", help="path to datafile")
+parser.add_argument("--outpath", type=str, default="./experiments/", help="path to the trained model directory")
+parser.add_argument("--model_prefix", type=str, default="ParticleNet_dropout1", help="Which model to load")
+parser.add_argument("--epoch", type=int, default=-1, help="epoch to run Rscores for (-1=best_epoch, 0=untrained)")
 parser.add_argument("--quick", dest="quick", action="store_true")
 parser.add_argument("--run_lrp", dest="run_lrp", action="store_true")
-parser.add_argument(
-    "--make_dr_Mij_plots", dest="make_dr_Mij_plots", action="store_true"
-)
+parser.add_argument("--make_dr_Mij_plots", dest="make_dr_Mij_plots", action="store_true")
 parser.add_argument("--scaling_up", dest="scaling_up", action="store_true")
 
 args = parser.parse_args()
 
 
 if __name__ == "__main__":
-
     outpath = osp.join(args.outpath, args.model_prefix)
 
     if not os.path.exists(f"{outpath}/xai"):
@@ -78,9 +45,7 @@ if __name__ == "__main__":
 
     # run lrp pipeline to compute the Rscores
     if args.run_lrp:
-        print(
-            f"Runing the LRP pipeline to compute the Rscores for the model at epoch {args.epoch}"
-        )
+        print(f"Runing the LRP pipeline to compute the Rscores for the model at epoch {args.epoch}")
         # load the testing data
         print("- loading datafiles for lrp studies...")
         data_test = load_data(args.dataset, "test", 4, args.quick)
@@ -91,9 +56,7 @@ if __name__ == "__main__":
             model_kwargs = pkl.load(f)
 
         if args.epoch == -1:  # load the best trained model
-            state_dict = torch.load(
-                f"{outpath}/best_epoch_weights.pth", map_location=device
-            )
+            state_dict = torch.load(f"{outpath}/best_epoch_weights.pth", map_location=device)
             PATH = f"{outpath}/xai/Rscores_best/"
         elif args.epoch == 0:  # load the untrained model
             state_dict = torch.load(
@@ -132,7 +95,6 @@ if __name__ == "__main__":
 
         ti = time.time()
         for i, jet in enumerate(loader):
-
             if i == 5 and args.quick:
                 break
 
@@ -144,7 +106,7 @@ if __name__ == "__main__":
             # explain a single jet
             try:
                 R_edges, edge_index = lrp.explain(jet.to(device))
-            except:
+            except Exception:
                 print("jet is not processed correctly so skipping it")
                 continue
 
@@ -194,22 +156,16 @@ if __name__ == "__main__":
         with open(f"{PATH}/edge_index.pkl", "wb") as handle:
             pkl.dump(edge_index_list, handle)
 
-        print(
-            f"Finished computing the Rscores for the model at epoch {args.epoch}"
-        )
+        print(f"Finished computing the Rscores for the model at epoch {args.epoch}")
 
     # produce the lrp deltaR and Mij result plots
     if args.make_dr_Mij_plots:
-        print(
-            f"Computing the deltaR and invariant mass distributions of the most relevant edges for the model at epoch {args.epoch}"
-        )
+        print(f"Computing the deltaR and invariant mass distributions of the most relevant edges at epoch {args.epoch}")
         make_dr_Mij_plots(f"{outpath}/xai", epoch=args.epoch, Top_N=5)
 
     # produce the lrp scaling_up result plots
     if args.scaling_up:
-        print(
-            f"Computing the fraction of relevant edges connecting different subjets for the model at epoch {args.epoch}"
-        )
+        print(f"Computing the fraction of relevant edges connecting different subjets for the model at epoch {args.epoch}")
         scaling_up(
             f"{outpath}/xai",
             epoch=args.epoch,

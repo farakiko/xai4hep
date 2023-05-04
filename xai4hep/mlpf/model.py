@@ -1,16 +1,9 @@
-import os
-import os.path as osp
-import pickle as pkl
-import sys
-from glob import glob
 from typing import Optional, Union
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from torch import Tensor
 from torch.nn import Linear
-from torch_geometric.data import Batch, Data, DataListLoader, DataLoader
 from torch_geometric.nn.conv import MessagePassing
 from torch_geometric.typing import OptTensor, PairOptTensor, PairTensor
 from torch_geometric.utils import to_dense_adj
@@ -20,17 +13,13 @@ try:
     from torch_cluster import knn
 except ImportError:
     knn = None
-import matplotlib
-import matplotlib.pyplot as plt
-import numpy as np
-from torch_cluster import knn_graph
 
 
 class GravNetConv_LRP(MessagePassing):
     """
     Copied from `GravNetConv` torch_geometric source code, with the following edits
       a. retrieve adjacency matrix (we call A), and the activations before the message passing step (we call msg_activations)
-      b. switched the execution of self.lin_s & self.lin_p so that the message passing step can substitute out of the box self.lin_s
+      b. switched self.lin_s & self.lin_p so that the message passing step can substitute out of the box self.lin_s
       c. used reduce='sum' instead of reduce='mean' in the message passing
       d. removed skip connection
     """
@@ -99,14 +88,10 @@ class GravNetConv_LRP(MessagePassing):
         # edge_index = knn_graph(s_l, self.k, b[0], b[1]).flip([0])
 
         edge_weight = (s_l[edge_index[0]] - s_r[edge_index[1]]).pow(2).sum(-1)
-        edge_weight = torch.exp(
-            -10.0 * edge_weight
-        )  # 10 gives a better spread
+        edge_weight = torch.exp(-10.0 * edge_weight)  # 10 gives a better spread
 
         # return the adjacency matrix of the graph for lrp purposes
-        A = to_dense_adj(
-            edge_index.to("cpu"), edge_attr=edge_weight.to("cpu")
-        )[0]
+        A = to_dense_adj(edge_index.to("cpu"), edge_attr=edge_weight.to("cpu"))[0]
 
         # message passing
         out = self.propagate(
@@ -121,19 +106,12 @@ class GravNetConv_LRP(MessagePassing):
     def message(self, x_j: Tensor, edge_weight: Tensor) -> Tensor:
         return x_j * edge_weight.unsqueeze(1)
 
-    def aggregate(
-        self, inputs: Tensor, index: Tensor, dim_size: Optional[int] = None
-    ) -> Tensor:
-        out_mean = scatter(
-            inputs, index, dim=self.node_dim, dim_size=dim_size, reduce="sum"
-        )
+    def aggregate(self, inputs: Tensor, index: Tensor, dim_size: Optional[int] = None) -> Tensor:
+        out_mean = scatter(inputs, index, dim=self.node_dim, dim_size=dim_size, reduce="sum")
         return out_mean
 
     def __repr__(self) -> str:
-        return (
-            f"{self.__class__.__name__}({self.in_channels}, "
-            f"{self.out_channels}, k={self.k})"
-        )
+        return f"{self.__class__.__name__}({self.in_channels}, " f"{self.out_channels}, k={self.k})"
 
 
 class MLPF(nn.Module):
@@ -177,11 +155,7 @@ class MLPF(nn.Module):
 
         self.conv = nn.ModuleList()
         for i in range(num_convs):
-            self.conv.append(
-                GravNetConv_LRP(
-                    embedding_dim, embedding_dim, space_dim, propagate_dim, k
-                )
-            )
+            self.conv.append(GravNetConv_LRP(embedding_dim, embedding_dim, space_dim, propagate_dim, k))
 
         # (3) DNN layer: classifiying pid
         self.nn2 = nn.Sequential(
@@ -206,7 +180,6 @@ class MLPF(nn.Module):
         )
 
     def forward(self, batch):
-
         x0 = batch.x
 
         # embed the inputs
@@ -216,9 +189,7 @@ class MLPF(nn.Module):
         A = {}
         msg_activations = {}
         for num, conv in enumerate(self.conv):
-            embedding, A[f"conv.{num}"], msg_activations[f"conv.{num}"] = conv(
-                embedding
-            )
+            embedding, A[f"conv.{num}"], msg_activations[f"conv.{num}"] = conv(embedding)
 
         # predict the pid's
         preds_id = self.nn2(torch.cat([x0, embedding], axis=-1))

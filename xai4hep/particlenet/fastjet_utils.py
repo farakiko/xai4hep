@@ -1,24 +1,12 @@
-import json
 import os
-import os.path as osp
 import pickle as pkl
-import shutil
-import sys
-from collections.abc import Sequence
 
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import torch
-from sklearn.metrics import auc, roc_curve
-from torch_geometric.data import Batch
-from torch_geometric.data.data import BaseData
-from torch_geometric.loader import DataListLoader, DataLoader
 
 
 def get_subjets(px, py, pz, e, N_SUBJETS=3, JET_ALGO="CA", jet_radius=0.8):
-
     """
     Declusters a jet into exactly N_SUBJETS using the JET_ALGO and jet_radius provided.
 
@@ -73,14 +61,7 @@ def get_subjets(px, py, pz, e, N_SUBJETS=3, JET_ALGO="CA", jet_radius=0.8):
     )
 
     pseudojets = []
-    pseudojets.append(
-        [
-            fastjet.PseudoJet(
-                particle.px, particle.py, particle.pz, particle.E
-            )
-            for particle in jet
-        ]
-    )
+    pseudojets.append([fastjet.PseudoJet(particle.px, particle.py, particle.pz, particle.E) for particle in jet])
 
     subjet_indices = []
     mapping = [jet.subjet_idx.to_list()]  # added square brackets
@@ -153,10 +134,7 @@ def get_subjets(px, py, pz, e, N_SUBJETS=3, JET_ALGO="CA", jet_radius=0.8):
     return subjet_idx, subjet_vectors, deta, dphi, dpt
 
 
-def scaling_up(
-    outpath, epoch, N_values=15, N_SUBJETS=3, JET_ALGO="CA", jet_radius=0.8
-):
-
+def scaling_up(outpath, epoch, N_values=15, N_SUBJETS=3, JET_ALGO="CA", jet_radius=0.8):
     """
     Computes the distribution of edges connecting different subjets for different values of N.
 
@@ -183,19 +161,19 @@ def scaling_up(
     if epoch == -1:
         PATH = f"{outpath}/Rscores_best"
         save_as = "best"
-        legend_title = f"Trained model"
+        legend_title = "Trained model"
     elif epoch == 0:
         PATH = f"{outpath}/Rscores_untrained"
         save_as = "untrained"
-        legend_title = f"Untrained model"
+        legend_title = "Untrained model"
     else:
         PATH = f"{outpath}/Rscores_epoch_{epoch}"
         save_as = f"epoch_{epoch}"
         legend_title = f"Model at epoch {epoch}"
 
     # load the jet information
-    with open(f"{PATH}/batch_x.pkl", "rb") as handle:
-        batch_x_list = pkl.load(handle)
+    # with open(f"{PATH}/batch_x.pkl", "rb") as handle:
+    #     batch_x_list = pkl.load(handle)
     with open(f"{PATH}/batch_y.pkl", "rb") as handle:
         batch_y_list = pkl.load(handle)
     with open(f"{PATH}/batch_p4.pkl", "rb") as handle:
@@ -213,8 +191,8 @@ def scaling_up(
         # define the jet information
         jet_label = batch_y_list[i]
 
-        eta = batch_x_list[i][:, 0]
-        phi = batch_x_list[i][:, 1]
+        # eta = batch_x_list[i][:, 0]
+        # phi = batch_x_list[i][:, 1]
 
         px = batch_p4_list[i][:, 0]
         py = batch_p4_list[i][:, 1]
@@ -228,10 +206,8 @@ def scaling_up(
         # get subjets
         try:
             print(f"- Declustering jet # {i} using {JET_ALGO} algorithm")
-            subjet_idx, _, _, _, _ = get_subjets(
-                px, py, pz, e, N_SUBJETS, JET_ALGO, jet_radius
-            )
-        except:
+            subjet_idx, _, _, _, _ = get_subjets(px, py, pz, e, N_SUBJETS, JET_ALGO, jet_radius)
+        except Exception:
             print(f"skipping jet # {i}")
             continue
 
@@ -239,18 +215,12 @@ def scaling_up(
             # N=0 doesn't make sense here
             for edge in torch.topk(edge_Rscores, N + 1).indices:
                 if jet_label == 1:
-                    if (
-                        subjet_idx[edge_index[0][edge]]
-                        != subjet_idx[edge_index[1][edge]]
-                    ):
+                    if subjet_idx[edge_index[0][edge]] != subjet_idx[edge_index[1][edge]]:
                         top_diff[N] += 1
                     else:
                         top_same[N] += 1
                 else:
-                    if (
-                        subjet_idx[edge_index[0][edge]]
-                        != subjet_idx[edge_index[1][edge]]
-                    ):
+                    if subjet_idx[edge_index[0][edge]] != subjet_idx[edge_index[1][edge]]:
                         qcd_diff[N] += 1
                     else:
                         qcd_same[N] += 1
@@ -272,9 +242,7 @@ def scaling_up(
     ax.plot(range(len(qcd_fraction)), qcd_fraction, label="QCD")
     ax.legend(title=legend_title)
     ax.set_xlabel(r"$N_{edges}$", fontsize=20)
-    ax.set_ylabel(
-        r"$N_{edges \ between \ subjets}$ / $N_{edges}$", fontsize=20
-    )
+    ax.set_ylabel(r"$N_{edges \ between \ subjets}$ / $N_{edges}$", fontsize=20)
     fig.tight_layout()
     plt.savefig(f"{outpath}/scaling_up_{save_as}.pdf")
     print(f"saved the plot as {outpath}/scaling_up_{save_as}.pdf")

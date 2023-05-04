@@ -1,20 +1,9 @@
-import pickle as pkl
-import os.path as osp
 import os
-import sys
-from glob import glob
 
-import numpy as np
-import mplhep as hep
-import pandas as pd
-
-import torch
-
-import torch.nn as nn
-from sklearn.metrics import accuracy_score
 import matplotlib
 import matplotlib.pyplot as plt
-
+import numpy as np
+import torch
 
 # this script makes Rmaps from a processed list of R_tensors
 
@@ -38,18 +27,18 @@ label_to_p4 = {
 
 
 def indexing_by_relevance(num, pid):
-    l = []
-    l.append(pid.capitalize())
+    list_ = []
+    list_.append(pid.capitalize())
     for i in range(num - 1):
         if i == 0:
-            l.append("Most relevant neighbor")
+            list_.append("Most relevant neighbor")
         elif i == 1:
-            l.append("2nd most relevant neighbor")
+            list_.append("2nd most relevant neighbor")
         elif i == 2:
-            l.append("3rd most relevant neighbor")
+            list_.append("3rd most relevant neighbor")
         else:
-            l.append(str(i + 1) + "th most relevant neighbor")
-    return l
+            list_.append(str(i + 1) + "th most relevant neighbor")
+    return list_
 
 
 def process_Rtensor(node, Rtensor, neighbors):
@@ -62,9 +51,10 @@ def process_Rtensor(node, Rtensor, neighbors):
         neighbors: # of neighbors to keep when processing the Rmap
 
     Returns
-        an absolutized, normalized, and sorted Rtensor (sorted the rows/neighbors by relevance aside from the first row which is always the node itself)
+        an absolutized, normalized, and sorted Rtensor
+        (sorted the rows/neighbors by relevance aside from the first row which is the node itself)
     """
-    in_features = Rtensor.shape[-1]
+    # in_features = Rtensor.shape[-1]
 
     Rtensor = Rtensor.absolute()
     Rtensor = Rtensor / Rtensor.sum()
@@ -84,9 +74,7 @@ def process_Rtensor(node, Rtensor, neighbors):
     return Rtensor[: neighbors + 1]
 
 
-def make_Rmaps(
-    outpath, Rtensors, inputs, preds, pid="chhadron", neighbors=2, out_neuron=0
-):
+def make_Rmaps(outpath, Rtensors, inputs, preds, pid="chhadron", neighbors=2, out_neuron=0):
     """
     Recall each event has a corresponding Rmap per node in the event.
     This function process the Rmaps for a given pid.
@@ -98,9 +86,7 @@ def make_Rmaps(
     """
     in_features = Rtensors[0].shape[-1]
 
-    Rtensor_correct, Rtensor_incorrect = torch.zeros(
-        neighbors + 1, in_features
-    ), torch.zeros(neighbors + 1, in_features)
+    Rtensor_correct, Rtensor_incorrect = torch.zeros(neighbors + 1, in_features), torch.zeros(neighbors + 1, in_features)
     num_Rtensors_correct, num_Rtensors_incorrect = 0, 0
 
     for event, event_Rscores in enumerate(Rtensors):
@@ -112,14 +98,10 @@ def make_Rmaps(
             if label_to_class[true_class] == pid:
                 # check if the node was correctly classified
                 if pred_class == true_class:
-                    Rtensor_correct = Rtensor_correct + process_Rtensor(
-                        node, node_Rtensor, neighbors
-                    )
+                    Rtensor_correct = Rtensor_correct + process_Rtensor(node, node_Rtensor, neighbors)
                     num_Rtensors_correct = num_Rtensors_correct + 1
                 else:
-                    Rtensor_incorrect = Rtensor_incorrect + process_Rtensor(
-                        node, node_Rtensor, neighbors
-                    )
+                    Rtensor_incorrect = Rtensor_incorrect + process_Rtensor(node, node_Rtensor, neighbors)
                     num_Rtensors_incorrect = num_Rtensors_incorrect + 1
 
     Rtensor_correct = Rtensor_correct / num_Rtensors_correct
@@ -139,9 +121,7 @@ def make_Rmaps(
         "is_gen_el",
     ]
 
-    node_types = indexing_by_relevance(
-        neighbors + 1, pid
-    )  # only plot 6 rows/neighbors in Rmap
+    node_types = indexing_by_relevance(neighbors + 1, pid)  # only plot 6 rows/neighbors in Rmap
 
     for status, var in {
         "correct": Rtensor_correct,
@@ -161,12 +141,16 @@ def make_Rmaps(
         fig, ax = plt.subplots(figsize=(20, 10))
         if out_neuron < 6:
             ax.set_title(
-                f"Average relevance score matrix for {pid}s's classification score of {num}/{tot_num} {status}ly classified elements",
+                # f"Average relevance score matrix for {pid}s's classification score of {num}/{tot_num} {status}ly
+                # classified elements",
+                f"Average Rmap for {pid}s's classification score of {num}/{tot_num} {status}ly classified elements",
                 fontsize=26,
             )
         else:
             ax.set_title(
-                f"Average relevance score matrix for {pid}'s {label_to_p4[out_neuron]} of {num}/{tot_num} {status}ly classified elements",
+                # f"Average relevance score matrix for {pid}'s {label_to_p4[out_neuron]} of {num}/{tot_num} {status}ly
+                # classified elements",
+                f"Average Rmap for {pid}'s {label_to_p4[out_neuron]} of {num}/{tot_num} {status}ly classified elements",
                 fontsize=26,
             )
 
@@ -174,17 +158,17 @@ def make_Rmaps(
         ax.set_yticks(np.arange(len(node_types)))
         ax.set_xticklabels(features, fontsize=22)
         ax.set_yticklabels(node_types, fontsize=20)
-        for col in range(len(features)):
-            for row in range(len(node_types)):
-                text = ax.text(
-                    col,
-                    row,
-                    round(var[row, col].item(), 5),
-                    ha="center",
-                    va="center",
-                    color="w",
-                    fontsize=14,
-                )
+        # for col in range(len(features)):
+        #     for row in range(len(node_types)):
+        #         text = ax.text(
+        #             col,
+        #             row,
+        #             round(var[row, col].item(), 5),
+        #             ha="center",
+        #             va="center",
+        #             color="w",
+        #             fontsize=14,
+        #         )
 
         plt.imshow(
             (var[: neighbors + 1] + 1e-12).numpy(),

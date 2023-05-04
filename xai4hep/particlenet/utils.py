@@ -1,50 +1,32 @@
 import json
 import os
-import os.path as osp
 import pickle as pkl
 import shutil
 import sys
-from collections.abc import Sequence
 
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import torch
 from sklearn.metrics import auc, roc_curve
-from torch_geometric.data import Batch
-from torch_geometric.data.data import BaseData
-from torch_geometric.loader import DataListLoader, DataLoader
 
 
-def save_model(
-    args, outpath, model_kwargs, kernel_sizes, fc_size, dropout, depth
-):
-
-    if not args.overwrite and os.path.isfile(
-        f"{args.outpath}/{args.model_prefix}/best_epoch_weights.pth"
-    ):
+def save_model(args, outpath, model_kwargs, kernel_sizes, fc_size, dropout, depth):
+    if not args.overwrite and os.path.isfile(f"{args.outpath}/{args.model_prefix}/best_epoch_weights.pth"):
         print(f"model {args.model_prefix} already exists, please delete it")
         sys.exit(0)
 
-    filelist = [
-        f for f in os.listdir(outpath) if not f.endswith(".txt")
-    ]  # don't remove the logs.txt
+    filelist = [f for f in os.listdir(outpath) if not f.endswith(".txt")]  # don't remove the logs.txt
 
     for f in filelist:
         try:
             os.remove(os.path.join(outpath, f))
-        except:
+        except Exception:
             shutil.rmtree(os.path.join(outpath, f))
 
-    with open(
-        f"{outpath}/model_kwargs.pkl", "wb"
-    ) as f:  # dump model architecture
+    with open(f"{outpath}/model_kwargs.pkl", "wb") as f:  # dump model architecture
         pkl.dump(model_kwargs, f, protocol=pkl.HIGHEST_PROTOCOL)
 
-    with open(
-        f"{outpath}/hyperparameters.json", "w"
-    ) as fp:  # dump hyperparameters
+    with open(f"{outpath}/hyperparameters.json", "w") as fp:  # dump hyperparameters
         json.dump(
             {
                 "n_epochs": args.n_epochs,
@@ -61,7 +43,6 @@ def save_model(
 
 
 def load_data(dataset_path, flag, n_files, quick):
-
     if quick:  # use only 1000 events for train
         print(f"--- loading only 1000 events for quick {flag}")
         data = torch.load(f"{dataset_path}/{flag}/processed/data_0.pt")[:1000]
@@ -76,7 +57,6 @@ def load_data(dataset_path, flag, n_files, quick):
 
 def make_roc(y_test, y_score, path):
     fpr, tpr, _ = roc_curve(y_test, y_score)
-    roc_auc = auc(fpr, tpr)
 
     fig, ax = plt.subplots()
     ax.plot(
@@ -95,7 +75,6 @@ def make_roc(y_test, y_score, path):
 
 
 def make_dr_Mij_plots(outpath, epoch, Top_N=5):
-
     """
     Computes and plots the deltaR and the invariant mass of the Top_N relevant edges for the model at a given epoch.
 
@@ -113,11 +92,11 @@ def make_dr_Mij_plots(outpath, epoch, Top_N=5):
 
     if epoch == -1:
         PATH = f"{outpath}/Rscores_best"
-        legend_title = f"Trained model"
+        legend_title = "Trained model"
         save_as = "best"
     elif epoch == 0:
         PATH = f"{outpath}/Rscores_untrained"
-        legend_title = f"Untrained model"
+        legend_title = "Untrained model"
         save_as = "untrained"
     else:
         PATH = f"{outpath}/Rscores_epoch_{epoch}"
@@ -158,9 +137,7 @@ def make_dr_Mij_plots(outpath, epoch, Top_N=5):
         edge_index = edge_index_list[i]["edge_conv_2"]
 
         def deltaR(eta1, eta2, phi1, phi2):
-            return torch.sqrt(
-                torch.square(eta2 - eta1) + torch.square(phi2 - phi1)
-            )
+            return torch.sqrt(torch.square(eta2 - eta1) + torch.square(phi2 - phi1))
 
         # pick the Top_N edge Rscores, get the indices
         top_edges = torch.topk(edge_Rscores, Top_N).indices
@@ -187,10 +164,7 @@ def make_dr_Mij_plots(outpath, epoch, Top_N=5):
             e2 = e[particle_2]
 
             M12 = torch.sqrt(
-                torch.square(e1 + e2)
-                - torch.square(px1 + px2)
-                - torch.square(py1 + py2)
-                - torch.square(pz1 + pz2)
+                torch.square(e1 + e2) - torch.square(px1 + px2) - torch.square(py1 + py2) - torch.square(pz1 + pz2)
             )
 
             if jet_label == 1:
@@ -240,7 +214,7 @@ def make_dr_Mij_plots(outpath, epoch, Top_N=5):
     ax.set_ylim(0, 20)
     ax.set_xlim(0, 1.6)
     ax.set_xticks([0, 0.5, 1, 1.5])
-    ax.set_xlabel("$\Delta$R of the 5 most relevant edges")
+    ax.set_xlabel(r"$\Delta$R of the 5 most relevant edges")
     ax.set_ylabel("Normalized counts")
     fig.tight_layout()
     plt.savefig(f"{outpath}/dr_plots/dr_{save_as}.pdf")

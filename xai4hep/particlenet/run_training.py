@@ -9,7 +9,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 import mplhep as hep
 import numpy as np
-import sklearn.metrics
 import torch
 import torch.nn as nn
 import torch_geometric
@@ -40,48 +39,18 @@ else:
 
 # define argparse
 parser = argparse.ArgumentParser()
-parser.add_argument(
-    "--dataset", type=str, default="../data/toptagging/", help="dataset path"
-)
-parser.add_argument(
-    "--outpath", type=str, default="../experiments/", help="output folder"
-)
-parser.add_argument(
-    "--model_prefix",
-    type=str,
-    default="ParticleNet_model",
-    help="directory to hold the model and plots",
-)
-parser.add_argument(
-    "--overwrite",
-    dest="overwrite",
-    action="store_true",
-    help="overwrites the model",
-)
-parser.add_argument(
-    "--n_epochs", type=int, default=3, help="number of training epochs"
-)
+parser.add_argument("--dataset", type=str, default="../data/toptagging/", help="dataset path")
+parser.add_argument("--outpath", type=str, default="../experiments/", help="output folder")
+parser.add_argument("--model_prefix", type=str, default="ParticleNet_model", help="directory to hold the model and plots")
+parser.add_argument("--overwrite", dest="overwrite", action="store_true", help="overwrites the model")
+parser.add_argument("--n_epochs", type=int, default=3, help="number of training epochs")
 parser.add_argument("--batch_size", type=int, default=100)
-parser.add_argument(
-    "--patience", type=int, default=20, help="patience before early stopping"
-)
+parser.add_argument("--patience", type=int, default=20, help="patience before early stopping")
 parser.add_argument("--lr", type=float, default=1e-4, help="learning rate")
-parser.add_argument(
-    "--nearest",
-    type=int,
-    default=16,
-    help="k nearest neighbors in gravnet layer",
-)
-parser.add_argument(
-    "--depth", type=int, default=1, help="depth of DNN in each EdgeConv block"
-)
+parser.add_argument("--nearest", type=int, default=16, help="k nearest neighbors in gravnet layer")
+parser.add_argument("--depth", type=int, default=1, help="depth of DNN in each EdgeConv block")
 parser.add_argument("--dropout", dest="dropout", action="store_true")
-parser.add_argument(
-    "--quick",
-    dest="quick",
-    action="store_true",
-    help="perform quick training and testing",
-)
+parser.add_argument("--quick", dest="quick", action="store_true", help="perform quick training and testing")
 
 args = parser.parse_args()
 
@@ -115,7 +84,6 @@ def train(multi_gpu, device, model, loader, optimizer):
     losses, t = 0, 0
 
     for batch in loader:
-
         if multi_gpu:
             batch = batch
         else:
@@ -140,9 +108,7 @@ def train(multi_gpu, device, model, loader, optimizer):
 
         losses = losses + loss.detach()
 
-    print(
-        f"Average inference time per batch is {round((t / len(loader)), 3)}s"
-    )
+    print(f"Average inference time per batch is {round((t / len(loader)), 3)}s")
 
     losses = (losses / (len(loader))).cpu().item()
 
@@ -195,7 +161,7 @@ def training_loop(
             break
 
         # training step
-        print(f"---->Initiating a training run")
+        print("---->Initiating a training run")
         model.train()
         losses = train(
             multi_gpu,
@@ -208,7 +174,7 @@ def training_loop(
         losses_train.append(losses)
 
         # validation step
-        print(f"---->Initiating a validation run")
+        print("---->Initiating a validation run")
         model.eval()
         losses = validation_run(multi_gpu, device, model, valid_loader)
 
@@ -225,9 +191,7 @@ def training_loop(
                 state_dict = model.state_dict()
             torch.save(state_dict, f"{outpath}/best_epoch_weights.pth")
 
-            with open(
-                f"{outpath}/best_epoch.json", "w"
-            ) as fp:  # dump best epoch
+            with open(f"{outpath}/best_epoch.json", "w") as fp:  # dump best epoch
                 json.dump({"best_epoch": epoch}, fp)
         else:
             stale_epochs += 1
@@ -252,9 +216,7 @@ def training_loop(
             state_dict = model.module.state_dict()
         except AttributeError:
             state_dict = model.state_dict()
-        torch.save(
-            state_dict, f"{outpath}/epoch_weights/epoch_{epoch+1}_weights.pth"
-        )
+        torch.save(state_dict, f"{outpath}/epoch_weights/epoch_{epoch+1}_weights.pth")
 
         # make loss plots
         fig, ax = plt.subplots()
@@ -270,15 +232,13 @@ def training_loop(
             pkl.dump((losses_train, losses_valid), f)
 
         print("----------------------------------------------------------")
-    print(
-        f"Done with training. Total training time is {round((time.time() - t0_initial)/60,3)}min"
-    )
+    print(f"Done with training. Total training time is {round((time.time() - t0_initial)/60,3)}min")
 
 
 if __name__ == "__main__":
     """
     e.g.
-    python run_training.py --overwrite --quick --model_prefix='ParticleNet_model' --dataset="/xai4hepvol/toptagging/" --outpath="/xai4hepvol/experiments/"
+    python run_training.py --overwrite --quick --model_prefix='ParticleNet_model' --dataset="toptagging/"
 
     """
 
@@ -358,9 +318,7 @@ if __name__ == "__main__":
     with open(f"{outpath}/model_kwargs.pkl", "rb") as f:
         model_kwargs = pkl.load(f)
 
-    state_dict = torch.load(
-        f"{outpath}/best_epoch_weights.pth", map_location=device
-    )
+    state_dict = torch.load(f"{outpath}/best_epoch_weights.pth", map_location=device)
 
     model = ParticleNet(**model_kwargs)
     model.load_state_dict(state_dict)
@@ -369,14 +327,10 @@ if __name__ == "__main__":
     data_test = load_data(args.dataset, "test", 4, args.quick)
 
     if multi_gpu:
-        test_loader = DataListLoader(
-            data_test, batch_size=args.batch_size, shuffle=True
-        )
+        test_loader = DataListLoader(data_test, batch_size=args.batch_size, shuffle=True)
         model = torch_geometric.nn.DataParallel(model)
     else:
-        test_loader = DataLoader(
-            data_test, batch_size=args.batch_size, shuffle=True
-        )
+        test_loader = DataLoader(data_test, batch_size=args.batch_size, shuffle=True)
 
     model.to(device)
     model.eval()
@@ -385,7 +339,6 @@ if __name__ == "__main__":
     y_score = None
     y_test = None
     for i, batch in enumerate(test_loader):
-
         if multi_gpu:
             batch = batch
         else:
@@ -394,7 +347,7 @@ if __name__ == "__main__":
         preds, targets = model(batch)
         preds = preds.detach().cpu()
 
-        if y_score == None:
+        if y_score is None:
             y_score = preds[:].detach().cpu().reshape(-1)
             y_test = targets.detach().cpu()
         else:
