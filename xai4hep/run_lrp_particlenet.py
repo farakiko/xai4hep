@@ -76,7 +76,20 @@ if __name__ == "__main__":
 
         # instantiate a ParticleNet model with the loaded configuration
         model = ParticleNet(**model_kwargs)
-        model.load_state_dict(state_dict)
+
+        try:
+            model.load_state_dict(state_dict)
+        except RuntimeError:
+            # if the model was saved using torch.nn.DataParallel()
+            from collections import OrderedDict
+
+            new_state_dict = OrderedDict()
+            for k, v in state_dict.items():
+                name = k[7:]  # remove module.
+                new_state_dict[name] = v
+            state_dict = new_state_dict
+            model.load_state_dict(state_dict)
+
         model.eval()
         model.to(device)
         print(model)
