@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
         # instantiate a ParticleNet model with the loaded configuration
         model = ParticleNet(**model_kwargs)
-
+        print(model)
         try:
             model.load_state_dict(state_dict)
         except RuntimeError:
