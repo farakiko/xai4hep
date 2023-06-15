@@ -56,7 +56,7 @@ if __name__ == "__main__":
             model_kwargs = pkl.load(f)
 
         if args.epoch == -1:  # load the best trained model
-            state_dict = torch.load(f"{outpath}/best_epoch_weights.pth", map_location=device)
+            state_dict = torch.load(f"{outpath}/epoch_weights/best_epoch_weights.pth", map_location=device)
             PATH = f"{outpath}/xai/Rscores_best/"
         elif args.epoch == 0:  # load the untrained model
             state_dict = torch.load(
