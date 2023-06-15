@@ -25,9 +25,9 @@ def get_subjets(px, py, pz, e, N_SUBJETS=3, JET_ALGO="CA", jet_radius=0.8):
     Returns:
         subjet_idx (np.array): NumPy array of shape ``[num_particles]`` with elements
                                 representing which subjet the particle belongs to.
+        subjet_vectors (list): includes bjet information (e.g. px, py, pz)
 
     """
-
     import awkward as ak
     import fastjet
     import vector
@@ -41,12 +41,6 @@ def get_subjets(px, py, pz, e, N_SUBJETS=3, JET_ALGO="CA", jet_radius=0.8):
 
     jetdef = fastjet.JetDefinition(JET_ALGO, jet_radius)
 
-    vector.register_awkward()
-    px = ak.from_regular(ak.from_numpy(px.numpy()))
-    py = ak.from_regular(ak.from_numpy(py.numpy()))
-    pz = ak.from_regular(ak.from_numpy(pz.numpy()))
-    e = ak.from_regular(ak.from_numpy(e.numpy()))
-
     # define jet directly not an array of jets
     jet = ak.zip(
         {
@@ -54,67 +48,52 @@ def get_subjets(px, py, pz, e, N_SUBJETS=3, JET_ALGO="CA", jet_radius=0.8):
             "py": py,
             "pz": pz,
             "E": e,
-            "particle_idx": ak.local_index(px),
-            "subjet_idx": ak.zeros_like(px, dtype=int) - 1,
         },
         with_name="Momentum4D",
     )
 
-    pseudojets = []
-    pseudojets.append([fastjet.PseudoJet(particle.px, particle.py, particle.pz, particle.E) for particle in jet])
+    pseudojet = [
+        fastjet.PseudoJet(particle.px.item(), particle.py.item(), particle.pz.item(), particle.E.item()) for particle in jet
+    ]
+
+    cluster = fastjet.ClusterSequence(pseudojet, jetdef)
+
+    # cluster jets
+    jets = cluster.inclusive_jets()
+    assert len(jets) == 1
+
+    # get the 3 exclusive jets
+    subjets = cluster.exclusive_subjets(jets[0], N_SUBJETS)
+    assert len(subjets) == N_SUBJETS
+
+    # sort by pt
+    subjets = sorted(subjets, key=lambda x: x.pt(), reverse=True)
+
+    # define a subjet_idx placeholder
+    subjet_idx = ak.zeros_like(px, dtype=int) - 1
+    mapping = subjet_idx.to_list()
 
     subjet_indices = []
-    mapping = [jet.subjet_idx.to_list()]  # added square brackets
-    for ijet, pseudojet in enumerate(pseudojets):
+    for subjet_idx, subjet in enumerate(subjets):
         subjet_indices.append([])
-        cluster = fastjet.ClusterSequence(pseudojet, jetdef)
+        for subjet_const in subjet.constituents():
+            for idx, jet_const in enumerate(pseudojet):
+                if (
+                    subjet_const.px() == jet_const.px()
+                    and subjet_const.py() == jet_const.py()
+                    and subjet_const.pz() == jet_const.pz()
+                    and subjet_const.E() == jet_const.E()
+                ):
+                    subjet_indices[-1].append(idx)
 
-        # cluster jets
-        jets = cluster.inclusive_jets()
-        assert len(jets) == 1
+    for subjet_idx, subjet in enumerate(subjets):
+        local_mapping = np.array(mapping)
+        local_mapping[subjet_indices[subjet_idx]] = subjet_idx
+        mapping = local_mapping
 
-        # get the 3 exclusive jets
-        subjets = cluster.exclusive_subjets(jets[0], N_SUBJETS)
-        assert len(subjets) == N_SUBJETS
+    # add the jet index
+    jet["subjet_idx"] = ak.Array(mapping)
 
-        # sort by pt
-        subjets = sorted(subjets, key=lambda x: x.pt(), reverse=True)
-
-        for subjet_idx, subjet in enumerate(subjets):
-            subjet_indices[-1].append([])
-            for subjet_const in subjet.constituents():
-                for idx, jet_const in enumerate(pseudojet):
-                    if (
-                        subjet_const.px() == jet_const.px()
-                        and subjet_const.py() == jet_const.py()
-                        and subjet_const.pz() == jet_const.pz()
-                        and subjet_const.E() == jet_const.E()
-                    ):
-                        subjet_indices[-1][-1].append(idx)
-
-        for subjet_idx, subjet in enumerate(subjets):
-            local_mapping = np.array(mapping[ijet])
-            local_mapping[subjet_indices[ijet][subjet_idx]] = subjet_idx
-            mapping[ijet] = local_mapping
-
-    jet = ak.zip(
-        {
-            "px": px,
-            "py": py,
-            "pz": pz,
-            "E": e,
-            "particle_idx": ak.local_index(px),
-            "subjet_idx": ak.Array(mapping[0]),  # pick first element
-        },
-        with_name="Momentum4D",
-    )
-
-    jet_vector = vector.obj(
-        px=ak.sum(jet.px, axis=-1),
-        py=ak.sum(jet.py, axis=-1),
-        pz=ak.sum(jet.pz, axis=-1),
-        E=ak.sum(jet.E, axis=-1),
-    )
     subjet_vectors = [
         vector.obj(
             px=ak.sum(jet.px[jet.subjet_idx == j], axis=-1),
@@ -125,13 +104,7 @@ def get_subjets(px, py, pz, e, N_SUBJETS=3, JET_ALGO="CA", jet_radius=0.8):
         for j in range(0, N_SUBJETS)
     ]
 
-    deta = jet.deltaeta(jet_vector)
-    dphi = jet.deltaphi(jet_vector)
-    dpt = jet.pt / jet_vector.pt
-
-    subjet_idx = jet.subjet_idx.to_numpy()
-
-    return subjet_idx, subjet_vectors, deta, dphi, dpt
+    return jet["subjet_idx"].to_numpy(), subjet_vectors
 
 
 def scaling_up(outpath, epoch, N_values=15, N_SUBJETS=3, JET_ALGO="CA", jet_radius=0.8):
@@ -206,7 +179,7 @@ def scaling_up(outpath, epoch, N_values=15, N_SUBJETS=3, JET_ALGO="CA", jet_radi
         # get subjets
         # try:
         print(f"- Declustering jet # {i} using {JET_ALGO} algorithm")
-        subjet_idx, _, _, _, _ = get_subjets(px, py, pz, e, N_SUBJETS, JET_ALGO, jet_radius)
+        subjet_idx, _ = get_subjets(px, py, pz, e, N_SUBJETS, JET_ALGO, jet_radius)
         # except Exception:
         #     print(f"skipping jet # {i}")
         #     continue
