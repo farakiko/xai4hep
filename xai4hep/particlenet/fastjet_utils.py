@@ -177,12 +177,12 @@ def scaling_up(outpath, epoch, N_values=15, N_SUBJETS=3, JET_ALGO="CA", jet_radi
         edge_index = edge_index_list[i]["edge_conv_2"]
 
         # get subjets
-        # try:
-        print(f"- Declustering jet # {i} using {JET_ALGO} algorithm")
-        subjet_idx, _ = get_subjets(px, py, pz, e, N_SUBJETS, JET_ALGO, jet_radius)
-        # except Exception:
-        #     print(f"skipping jet # {i}")
-        #     continue
+        try:
+            print(f"- Declustering jet # {i} using {JET_ALGO} algorithm")
+            subjet_idx, _ = get_subjets(px, py, pz, e, N_SUBJETS, JET_ALGO, jet_radius)
+        except Exception:
+            print(f"skipping jet # {i}")
+            continue
 
         for N in range(N_values):
             # N=0 doesn't make sense here
