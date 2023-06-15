@@ -243,6 +243,7 @@ def scaling_up(outpath, epoch, N_values=15, N_SUBJETS=3, JET_ALGO="CA", jet_radi
     ax.legend(title=legend_title)
     ax.set_xlabel(r"$N_{edges}$", fontsize=20)
     ax.set_ylabel(r"$N_{edges \ between \ subjets}$ / $N_{edges}$", fontsize=20)
+    ax.set_ylim(0.0, 1.0)
     fig.tight_layout()
     plt.savefig(f"{outpath}/scaling_up_{save_as}.pdf")
     print(f"saved the plot as {outpath}/scaling_up_{save_as}.pdf")
