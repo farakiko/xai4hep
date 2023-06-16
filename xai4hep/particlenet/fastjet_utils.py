@@ -190,7 +190,11 @@ def scaling_up(outpath, epoch, N_values=15, N_SUBJETS=3, JET_ALGO="CA", jet_radi
         # edge_Rscores = R_edges_list[i]["edge_conv_2"]
         # edge_index = edge_index_list[i]["edge_conv_2"]
 
-        edge_Rscores = R_edges_list[i].sum(axis=1)
+        # sum over the latent features' edge Rscores
+        edge_Rscores = torch.abs(R_edges_list[i]).sum(axis=1)
+        # normalize the sum of edge Rscores of all jets to be 1
+        edge_Rscores = edge_Rscores / sum(edge_Rscores)
+
         edge_index = edge_index_list[i]
 
         # get subjets
