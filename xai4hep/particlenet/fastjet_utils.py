@@ -205,6 +205,9 @@ def scaling_up(outpath, epoch, N_values=15, N_SUBJETS=3, JET_ALGO="CA", jet_radi
         for N in range(N_values):
             # N=0 doesn't make sense here
             for edge in torch.topk(edge_Rscores, N + 1).indices:
+                print("subjet_idx", subjet_idx)
+                print("edge_index[0]", edge_index[0])
+                print("edge_index[0][edge]", edge_index[0][edge])
                 print(subjet_idx[edge_index[0][edge]])
                 if jet_label == 1:
                     # if subjet_idx[edge_index[0][edge]] != subjet_idx[edge_index[1][edge]]:
