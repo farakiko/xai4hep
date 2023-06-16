@@ -187,10 +187,11 @@ def scaling_up(outpath, epoch, N_values=15, N_SUBJETS=3, JET_ALGO="CA", jet_radi
         e = batch_E_list[i]
 
         # define the edgeRscores and the edge_index of the last EdgeConv block
-        print(R_edges_list[i])
-        print(R_edges_list[i].shape)
-        edge_Rscores = R_edges_list[i]["edge_conv_2"]
-        edge_index = edge_index_list[i]["edge_conv_2"]
+        # edge_Rscores = R_edges_list[i]["edge_conv_2"]
+        # edge_index = edge_index_list[i]["edge_conv_2"]
+
+        edge_Rscores = R_edges_list[i]
+        edge_index = edge_index_list[i]
 
         # get subjets
         try:
