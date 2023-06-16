@@ -145,12 +145,19 @@ def scaling_up(outpath, epoch, N_values=15, N_SUBJETS=3, JET_ALGO="CA", jet_radi
         legend_title = f"Model at epoch {epoch}"
 
     # load the jet information
-    # with open(f"{PATH}/batch_x.pkl", "rb") as handle:
-    #     batch_x_list = pkl.load(handle)
     with open(f"{PATH}/batch_y.pkl", "rb") as handle:
         batch_y_list = pkl.load(handle)
-    with open(f"{PATH}/batch_p4.pkl", "rb") as handle:
-        batch_p4_list = pkl.load(handle)
+    # with open(f"{PATH}/batch_p4.pkl", "rb") as handle:
+    #     batch_p4_list = pkl.load(handle)
+
+    with open(f"{PATH}/batch_px.pkl", "rb") as handle:
+        batch_px_list = pkl.load(handle)
+    with open(f"{PATH}/batch_py.pkl", "rb") as handle:
+        batch_py_list = pkl.load(handle)
+    with open(f"{PATH}/batch_pz.pkl", "rb") as handle:
+        batch_pz_list = pkl.load(handle)
+    with open(f"{PATH}/batch_E.pkl", "rb") as handle:
+        batch_E_list = pkl.load(handle)
 
     # load the edgeRscores and edge_index of each EdgeConv block
     with open(f"{PATH}/R_edges.pkl", "rb") as handle:
@@ -158,7 +165,9 @@ def scaling_up(outpath, epoch, N_values=15, N_SUBJETS=3, JET_ALGO="CA", jet_radi
     with open(f"{PATH}/edge_index.pkl", "rb") as handle:
         edge_index_list = pkl.load(handle)
 
-    Num_jets = len(batch_p4_list)
+    # Num_jets = len(batch_p4_list)
+    Num_jets = len(batch_E_list)
+
     print(f"Total # of jets is {Num_jets}")
     for i in range(Num_jets):
         # define the jet information
@@ -167,10 +176,15 @@ def scaling_up(outpath, epoch, N_values=15, N_SUBJETS=3, JET_ALGO="CA", jet_radi
         # eta = batch_x_list[i][:, 0]
         # phi = batch_x_list[i][:, 1]
 
-        px = batch_p4_list[i][:, 0]
-        py = batch_p4_list[i][:, 1]
-        pz = batch_p4_list[i][:, 2]
-        e = batch_p4_list[i][:, 3]
+        # px = batch_p4_list[i][:, 0]
+        # py = batch_p4_list[i][:, 1]
+        # pz = batch_p4_list[i][:, 2]
+        # e = batch_p4_list[i][:, 3]
+
+        px = batch_px_list[i]
+        py = batch_py_list[i]
+        pz = batch_pz_list[i]
+        e = batch_E_list[i]
 
         # define the edgeRscores and the edge_index of the last EdgeConv block
         edge_Rscores = R_edges_list[i]["edge_conv_2"]
