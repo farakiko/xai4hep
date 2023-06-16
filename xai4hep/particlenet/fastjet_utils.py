@@ -190,7 +190,7 @@ def scaling_up(outpath, epoch, N_values=15, N_SUBJETS=3, JET_ALGO="CA", jet_radi
         # edge_Rscores = R_edges_list[i]["edge_conv_2"]
         # edge_index = edge_index_list[i]["edge_conv_2"]
 
-        edge_Rscores = R_edges_list[i]
+        edge_Rscores = R_edges_list[i].sum(axis=1)
         edge_index = edge_index_list[i]
         print(edge_index)
         print(edge_index.shape)
