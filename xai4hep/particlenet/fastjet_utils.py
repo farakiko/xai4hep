@@ -192,7 +192,8 @@ def scaling_up(outpath, epoch, N_values=15, N_SUBJETS=3, JET_ALGO="CA", jet_radi
 
         edge_Rscores = R_edges_list[i]
         edge_index = edge_index_list[i]
-
+        print(edge_index)
+        print(edge_index.shape)
         # get subjets
         try:
             print(f"- Declustering jet # {i} using {JET_ALGO} algorithm")
@@ -205,11 +206,14 @@ def scaling_up(outpath, epoch, N_values=15, N_SUBJETS=3, JET_ALGO="CA", jet_radi
             # N=0 doesn't make sense here
             for edge in torch.topk(edge_Rscores, N + 1).indices:
                 if jet_label == 1:
+                    # if subjet_idx[edge_index[0][edge]] != subjet_idx[edge_index[1][edge]]:
+                    print(subjet_idx[edge_index[0][edge]])
                     if subjet_idx[edge_index[0][edge]] != subjet_idx[edge_index[1][edge]]:
                         top_diff[N] += 1
                     else:
                         top_same[N] += 1
                 else:
+                    # if subjet_idx[edge_index[0][edge]] != subjet_idx[edge_index[1][edge]]:
                     if subjet_idx[edge_index[0][edge]] != subjet_idx[edge_index[1][edge]]:
                         qcd_diff[N] += 1
                     else:
