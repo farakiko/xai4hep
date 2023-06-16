@@ -283,82 +283,82 @@ if __name__ == "__main__":
         state_dict = model.state_dict()
     torch.save(state_dict, f"{outpath}/before_training_weights.pth")
 
-    # Load the training datafiles
-    print("- loading datafiles for training...")
-    data_train = load_data(args.dataset, "train", 12, args.quick)
-    data_valid = load_data(args.dataset, "val", 4, args.quick)
+    # # Load the training datafiles
+    # print("- loading datafiles for training...")
+    # data_train = load_data(args.dataset, "train", 12, args.quick)
+    # data_valid = load_data(args.dataset, "val", 4, args.quick)
 
-    # make convenient dataloaders and use DataParallel if multi_gpu is on
-    if multi_gpu:
-        train_loader = DataListLoader(data_train, batch_size=args.batch_size)
-        valid_loader = DataListLoader(data_valid, batch_size=args.batch_size)
-        model = torch_geometric.nn.DataParallel(model)
-    else:
-        train_loader = DataLoader(data_train, batch_size=args.batch_size)
-        valid_loader = DataLoader(data_valid, batch_size=args.batch_size)
+    # # make convenient dataloaders and use DataParallel if multi_gpu is on
+    # if multi_gpu:
+    #     train_loader = DataListLoader(data_train, batch_size=args.batch_size)
+    #     valid_loader = DataListLoader(data_valid, batch_size=args.batch_size)
+    #     model = torch_geometric.nn.DataParallel(model)
+    # else:
+    #     train_loader = DataLoader(data_train, batch_size=args.batch_size)
+    #     valid_loader = DataLoader(data_valid, batch_size=args.batch_size)
 
-    model.to(device)
+    # model.to(device)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
-    print(f"- training over {args.n_epochs} epochs")
-    training_loop(
-        multi_gpu,
-        device,
-        model,
-        train_loader,
-        valid_loader,
-        args.n_epochs,
-        args.patience,
-        optimizer,
-        outpath,
-    )
+    # print(f"- training over {args.n_epochs} epochs")
+    # training_loop(
+    #     multi_gpu,
+    #     device,
+    #     model,
+    #     train_loader,
+    #     valid_loader,
+    #     args.n_epochs,
+    #     args.patience,
+    #     optimizer,
+    #     outpath,
+    # )
 
-    # load the best trained model for testing
-    with open(f"{outpath}/model_kwargs.pkl", "rb") as f:
-        model_kwargs = pkl.load(f)
+    # # load the best trained model for testing
+    # with open(f"{outpath}/model_kwargs.pkl", "rb") as f:
+    #     model_kwargs = pkl.load(f)
 
-    state_dict = torch.load(f"{outpath}/best_epoch_weights.pth", map_location=device)
+    # state_dict = torch.load(f"{outpath}/best_epoch_weights.pth", map_location=device)
 
-    model = ParticleNet(**model_kwargs)
-    model.load_state_dict(state_dict)
+    # model = ParticleNet(**model_kwargs)
+    # model.load_state_dict(state_dict)
 
-    print("- loading datafiles for testing...")
-    data_test = load_data(args.dataset, "test", 4, args.quick)
+    # print("- loading datafiles for testing...")
+    # data_test = load_data(args.dataset, "test", 4, args.quick)
 
-    if multi_gpu:
-        test_loader = DataListLoader(data_test, batch_size=args.batch_size, shuffle=True)
-        model = torch_geometric.nn.DataParallel(model)
-    else:
-        test_loader = DataLoader(data_test, batch_size=args.batch_size, shuffle=True)
+    # if multi_gpu:
+    #     test_loader = DataListLoader(data_test, batch_size=args.batch_size, shuffle=True)
+    #     model = torch_geometric.nn.DataParallel(model)
+    # else:
+    #     test_loader = DataLoader(data_test, batch_size=args.batch_size, shuffle=True)
 
-    model.to(device)
-    model.eval()
+    # model.to(device)
+    # model.eval()
 
-    print("- making predictions")
-    y_score = None
-    y_test = None
-    for i, batch in enumerate(test_loader):
-        if multi_gpu:
-            batch = batch
-        else:
-            batch = batch.to(device)
+    # print("- making predictions")
+    # y_score = None
+    # y_test = None
+    # for i, batch in enumerate(test_loader):
+    #     if multi_gpu:
+    #         batch = batch
+    #     else:
+    #         batch = batch.to(device)
 
-        preds, targets = model(batch)
-        preds = preds.detach().cpu()
+    #     preds, targets = model(batch)
+    #     preds = preds.detach().cpu()
 
-        if y_score is None:
-            y_score = preds[:].detach().cpu().reshape(-1)
-            y_test = targets.detach().cpu()
-        else:
-            y_score = torch.cat([y_score, preds[:].detach().cpu().reshape(-1)])
-            y_test = torch.cat([y_test, targets.detach().cpu()])
+    #     if y_score is None:
+    #         y_score = preds[:].detach().cpu().reshape(-1)
+    #         y_test = targets.detach().cpu()
+    #     else:
+    #         y_score = torch.cat([y_score, preds[:].detach().cpu().reshape(-1)])
+    #         y_test = torch.cat([y_test, targets.detach().cpu()])
 
-    # save the predictions
-    print("- saving predictions")
-    torch.save(y_test, f"{outpath}/y_test.pt")
-    torch.save(y_score, f"{outpath}/y_score.pt")
+    # # save the predictions
+    # print("- saving predictions")
+    # torch.save(y_test, f"{outpath}/y_test.pt")
+    # torch.save(y_score, f"{outpath}/y_score.pt")
 
-    # Compute ROC curve
-    print("- making Roc curves")
-    make_roc(y_test, y_score, f"{outpath}/Roc_curve.pdf")
+    # # Compute ROC curve
+    # print("- making Roc curves")
+    # make_roc(y_test, y_score, f"{outpath}/Roc_curve.pdf")
