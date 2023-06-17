@@ -59,21 +59,15 @@ if __name__ == "__main__":
             state_dict = torch.load(f"{outpath}/best_epoch_weights.pth", map_location=device)
             PATH = f"{outpath}/xai/Rscores_best/"
         elif args.epoch == 0:  # load the untrained model
-            state_dict = torch.load(
-                f"{outpath}/before_training_weights.pth",
-                map_location=device,
-            )
+            state_dict = torch.load(f"{outpath}/before_training_weights.pth", map_location=device)
             PATH = f"{outpath}/xai/Rscores_untrained/"
         else:  # load a specefic epoch of the trained model
-            state_dict = torch.load(
-                f"{outpath}/epoch_weights/epoch_{args.epoch}_weights.pth",
-                map_location=device,
-            )
+            state_dict = torch.load(f"{outpath}/epoch_weights/epoch_{args.epoch}_weights.pth", map_location=device)
             PATH = f"{outpath}/xai/Rscores_epoch_{args.epoch}/"
 
         # the following line will make it possible to retrieve intermediate activations
         model_kwargs["for_LRP"] = True
-        model_kwargs["depth"] = 1  # TODO: remove
+        # model_kwargs["depth"] = 1  # TODO: remove
         # instantiate a ParticleNet model with the loaded configuration
         model = ParticleNet(**model_kwargs)
         model.load_state_dict(state_dict)
