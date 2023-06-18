@@ -48,7 +48,7 @@ if __name__ == "__main__":
         print(f"Runing the LRP pipeline to compute the Rscores for the model at epoch {args.epoch}")
         # load the testing data
         print("- loading datafiles for lrp studies...")
-        data_test = load_data(args.dataset, "test", 4, args.quick)
+        data_test = load_data(args.dataset, "test", 1, args.quick)
         loader = DataLoader(data_test, batch_size=1, shuffle=True)
 
         # load a pretrained model
