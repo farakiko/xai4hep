@@ -184,8 +184,8 @@ def scaling_up(outpath, epoch, N_values=15, N_SUBJETS=3, JET_ALGO="CA", jet_radi
         # e = batch_E_list[i]
 
         # define the edgeRscores and the edge_index of the last EdgeConv block
-        edge_Rscores = R_edges_list[i]["edge_conv_2"]
-        edge_index = edge_index_list[i]["edge_conv_2"]
+        edge_Rscores = R_edges_list[i]
+        edge_index = edge_index_list[i]
 
         # # sum over the latent features' edge Rscores
         # edge_Rscores = torch.abs(R_edges_list[i]).sum(axis=1)
