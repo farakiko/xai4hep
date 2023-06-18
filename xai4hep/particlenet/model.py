@@ -69,7 +69,7 @@ class ParticleNet(nn.Module):
         node_feat_size,
         num_classes=1,
         k=16,
-        depth=2,
+        depth=1,
         dropout=False,
     ):
         super(ParticleNet, self).__init__()
