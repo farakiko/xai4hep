@@ -48,7 +48,7 @@ if __name__ == "__main__":
         print(f"Runing the LRP pipeline to compute the Rscores for the model at epoch {args.epoch}")
         # load the testing data
         print("- loading datafiles for lrp studies...")
-        data_test = load_data(args.dataset, "test", 1, args.quick)
+        data_test = load_data(args.dataset, "test", 4, args.quick)
         loader = DataLoader(data_test, batch_size=1, shuffle=True)
 
         # load a pretrained model
@@ -67,7 +67,7 @@ if __name__ == "__main__":
 
         # the following line will make it possible to retrieve intermediate activations
         model_kwargs["for_LRP"] = True
-        # model_kwargs["depth"] = 1  # TODO: remove
+
         # instantiate a ParticleNet model with the loaded configuration
         model = ParticleNet(**model_kwargs)
         model.load_state_dict(state_dict)
@@ -136,7 +136,7 @@ if __name__ == "__main__":
                 fp,
             )
 
-        # store the lists containing the jet information
+        # store the lists containing the feature information for each jet
         with open(f"{PATH}/batch_x.pkl", "wb") as handle:
             pkl.dump(batch_x_list, handle)
         with open(f"{PATH}/batch_y.pkl", "wb") as handle:
@@ -160,11 +160,4 @@ if __name__ == "__main__":
     # produce the lrp scaling_up result plots
     if args.scaling_up:
         print(f"Computing the fraction of relevant edges connecting different subjets for the model at epoch {args.epoch}")
-        scaling_up(
-            f"{outpath}/xai",
-            epoch=args.epoch,
-            N_values=15,
-            N_SUBJETS=3,
-            JET_ALGO="CA",
-            jet_radius=0.8,
-        )
+        scaling_up(f"{outpath}/xai", epoch=args.epoch, N_values=15, N_SUBJETS=3, JET_ALGO="CA", jet_radius=0.8)

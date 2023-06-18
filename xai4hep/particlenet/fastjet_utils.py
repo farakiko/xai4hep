@@ -150,15 +150,6 @@ def scaling_up(outpath, epoch, N_values=15, N_SUBJETS=3, JET_ALGO="CA", jet_radi
     with open(f"{PATH}/batch_p4.pkl", "rb") as handle:
         batch_p4_list = pkl.load(handle)
 
-    # with open(f"{PATH}/batch_px.pkl", "rb") as handle:
-    #     batch_px_list = pkl.load(handle)
-    # with open(f"{PATH}/batch_py.pkl", "rb") as handle:
-    #     batch_py_list = pkl.load(handle)
-    # with open(f"{PATH}/batch_pz.pkl", "rb") as handle:
-    #     batch_pz_list = pkl.load(handle)
-    # with open(f"{PATH}/batch_E.pkl", "rb") as handle:
-    #     batch_E_list = pkl.load(handle)
-
     # load the edgeRscores and edge_index of each EdgeConv block
     with open(f"{PATH}/R_edges.pkl", "rb") as handle:
         R_edges_list = pkl.load(handle)
@@ -178,21 +169,9 @@ def scaling_up(outpath, epoch, N_values=15, N_SUBJETS=3, JET_ALGO="CA", jet_radi
         pz = batch_p4_list[i][:, 2]
         e = batch_p4_list[i][:, 3]
 
-        # px = batch_px_list[i]
-        # py = batch_py_list[i]
-        # pz = batch_pz_list[i]
-        # e = batch_E_list[i]
-
         # define the edgeRscores and the edge_index of the last EdgeConv block
         edge_Rscores = R_edges_list[i]
         edge_index = edge_index_list[i]
-
-        # # sum over the latent features' edge Rscores
-        # edge_Rscores = torch.abs(R_edges_list[i]).sum(axis=1)
-        # # normalize the sum of edge Rscores of all jets to be 1
-        # edge_Rscores = edge_Rscores / sum(edge_Rscores)
-
-        # edge_index = edge_index_list[i]
 
         # get subjets
         try:
