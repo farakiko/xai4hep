@@ -133,8 +133,8 @@ def make_dr_Mij_plots(outpath, epoch, Top_N=5):
         e = batch_p4_list[i][:, 3]
 
         # define the edgeRscores and the edge_index of the last EdgeConv block
-        edge_Rscores = R_edges_list[i]["edge_conv_2"]
-        edge_index = edge_index_list[i]["edge_conv_2"]
+        edge_Rscores = R_edges_list[i]
+        edge_index = edge_index_list[i]
 
         def deltaR(eta1, eta2, phi1, phi2):
             return torch.sqrt(torch.square(eta2 - eta1) + torch.square(phi2 - phi1))
