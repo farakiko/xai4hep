@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from explainer import LRP
+from xai4hep.explainer import LRP
 from torch.utils.data import DataLoader
 
 # this script builds a toy dataset, trains a simple FFN model on the dataset, and tests LRP

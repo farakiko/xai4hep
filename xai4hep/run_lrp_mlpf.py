@@ -2,8 +2,8 @@ import argparse
 import pickle as pkl
 
 import torch
-from explainer import LRP_MLPF
-from mlpf import MLPF, make_Rmaps
+from xai4hep.explainer import LRP_MLPF
+from xai4hep.mlpf import MLPF, make_Rmaps
 from torch_geometric.data import Batch
 
 # this script runs lrp on a trained MLPF model

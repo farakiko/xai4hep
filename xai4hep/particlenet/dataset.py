@@ -172,9 +172,9 @@ def parse_args():
 
 if __name__ == "__main__":
     """
-    To process train data: python dataset.py --dataset data/toptagging/ --mode train
-    To process val data:   python dataset.py --dataset data/toptagging/ --mode val
-    To process test data:  python dataset.py --dataset data/toptagging/ --mode test
+    To process train data: python -m xai4hep.particlenet.dataset --dataset data/toptagging/ --mode train
+    To process val data:   python -m xai4hep.particlenet.dataset --dataset data/toptagging/ --mode val
+    To process test data:  python -m xai4hep.particlenet.dataset --dataset data/toptagging/ --mode test
     """
 
     args = parse_args()

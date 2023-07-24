@@ -12,7 +12,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch_geometric
-from model import ParticleNet
+from xai4hep.particlenet.model import ParticleNet
 from torch_geometric.loader import DataListLoader, DataLoader
 from utils import load_data, make_roc, save_model
 

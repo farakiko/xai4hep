@@ -7,8 +7,8 @@ import time
 import warnings
 
 import torch
-from explainer import LRP_ParticleNet
-from particlenet import ParticleNet, load_data, make_dr_Mij_plots, scaling_up
+from xai4hep.explainer import LRP_ParticleNet
+from xai4hep.particlenet import ParticleNet, load_data, make_dr_Mij_plots, scaling_up
 from torch_geometric.loader import DataLoader
 
 warnings.filterwarnings("ignore")
