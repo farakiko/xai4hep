@@ -8,9 +8,10 @@ import mplhep as hep
 import numpy as np
 import torch
 import torch_geometric
-from xai4hep.particlenet.model import ParticleNet
 from torch_geometric.loader import DataListLoader, DataLoader
 from utils import load_data, make_roc
+
+from xai4hep.particlenet.model import ParticleNet
 
 plt.style.use(hep.style.CMS)
 plt.rcParams.update({"font.size": 20})
