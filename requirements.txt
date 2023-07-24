@@ -1,0 +1,12 @@
+# python 3.9 & must install packages via Rosetta2 on x86 not arm for Mac M-chip (for fastjet)
+# for torch-cluster better install via conda after the pip installs (e.g. conda install pytorch-cluster -c pyg)
+numpy>=1.21.0
+torch>=1.8.0
+torch_geometric
+torch-cluster
+pandas
+matplotlib
+mplhep
+captum
+tqdm
+fastjet

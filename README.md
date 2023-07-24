@@ -28,15 +28,16 @@ xai4hep provides necessary implementation of explainable AI (XAI) techniques for
 </figure>
 
 ## Setup
+We recommend using the `requirements.txt` file then installing `xai4hep` as a module by running 
+```
+pip install .
+```
+
+Other ways to setup,
+
 1. If you have access to the kubernetes [PRP Nautlius cluster](https://nautilus.optiputer.net/), then refer to this gitlab repo for the setup https://gitlab.nrp-nautilus.io/fmokhtar/xai4hep
 
 2. Using docker
 ```bash
 docker build docker/
-```
-
-3. Using conda
-```bash
-conda env create -f environment.yml
-conda activate xai
 ```

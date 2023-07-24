@@ -16,3 +16,6 @@ xai4hep/data/*
 xai4hep/experiments/*
 xai4hep/binder/ParticleNet_6
 xai4hep/binder/ParticleNet
+
+xai4hep.egg-info
+build
