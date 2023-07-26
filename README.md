@@ -28,7 +28,7 @@ xai4hep provides necessary implementation of explainable AI (XAI) techniques for
 </figure>
 
 ## Setup
-We recommend using the `requirements.txt` file then installing `xai4hep` as a module by running 
+We recommend using the `requirements.txt` file then installing `xai4hep` as a module by running
 ```
 pip install .
 ```

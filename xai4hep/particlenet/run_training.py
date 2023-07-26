@@ -12,9 +12,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch_geometric
-from model import ParticleNet
 from torch_geometric.loader import DataListLoader, DataLoader
-from utils import load_data, make_roc, save_model
+
+from xai4hep.particlenet.model import ParticleNet
+from xai4hep.particlenet.utils import load_data, make_roc, save_model
 
 plt.style.use(hep.style.CMS)
 plt.rcParams.update({"font.size": 20})

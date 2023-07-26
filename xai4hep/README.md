@@ -3,7 +3,7 @@
 Running LRP to explain a simple fully connected network (FCN) trained on a toy dataset with one highly discriminatory feature:
 
 ```bash
-python run_lrp_fcn.py
+python -m run_lrp_fcn
 ```
 
 ## Explaining MLPF using LRP
@@ -14,7 +14,7 @@ python run_lrp_fcn.py
 
 - **Running modified LRP for a trained MLPF model**
 ```bash
-python run_lrp_mlpf.py --run_lrp --make_rmaps --load_model=$model_dir --load_epoch=$epoch
+python -m run_lrp_mlpf --run_lrp --make_rmaps --load_model=$model_dir --load_epoch=$epoch
 ```
 
 ## Explaining ParticleNet using LRP
@@ -36,9 +36,8 @@ This will automatically create a `data/` folder under the `xai4hep/` repository,
 
 From this directory run
 ```bash
-mkdir experiments/
 cd particlenet
-python run_training.py --quick --model_prefix=ParticleNet_model
+python -m run_training --quick --model_prefix=ParticleNet_model
 ```
 This will run a quick training over a small sample of the dataset and store the model under `experiments/`.
 
@@ -46,5 +45,5 @@ This will run a quick training over a small sample of the dataset and store the 
 
 From this directory run
 ```bash
-python run_lrp_particlenet.py --quick --model_prefix=ParticleNet_model --run_lrp --make_dr_Mij_plots --scaling_up
+python -m run_lrp_particlenet --quick --model_prefix=ParticleNet_model --run_lrp --make_dr_Mij_plots --scaling_up
 ```
